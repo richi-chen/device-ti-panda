@@ -1,0 +1,209 @@
+import init.omap4pandaboard.usb.rc
+
+on early-init
+    export EXTERNAL_STORAGE /mnt/sdcard
+    mkdir /mnt/sdcard 0000 system system
+    # for backwards compatibility
+    symlink /mnt/sdcard /sdcard
+
+    export SECOND_VOLUME_STORAGE /mnt/external_sd
+    mkdir /mnt/external_sd 0000 system system
+
+    export THIRD_VOLUME_STORAGE /mnt/usb_storage
+    mkdir /mnt/usb_storage 0000 system system
+
+on post-fs-data
+    # we will remap this as /mnt/sdcard with the sdcard fuse tool
+    mkdir /data/media 0775 media_rw media_rw
+    chown media_rw media_rw /data/media
+	mkdir /data/smc 0770 system system
+        chown system system /data/smc/counter.bin
+        chown system system /data/smc/storage.bin
+        chown system system /data/smc/system.bin
+
+	setprop vold.post_fs_data_done 1
+
+on boot
+	mount debugfs /sys/kernel/debug /sys/kernel/debug
+	chmod 0666 /dev/pvrsrvkm
+
+# take a wakelock on boot until PM is working
+	write /sys/power/wake_lock hack
+
+# cpufreq interactive governor: timer 20ms, min sample 20ms, hispeed 800MHz
+	write /sys/devices/system/cpu/cpufreq/interactive/timer_rate 20000
+	write /sys/devices/system/cpu/cpufreq/interactive/min_sample_time 20000
+	write /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq 800000
+
+# TI_ST/BT/FM
+	insmod /system/lib/modules/st_drv.ko
+	insmod /system/lib/modules/btwilink.ko
+	insmod /system/lib/modules/fm_drv.ko
+# wi-fi
+	mkdir /data/misc/wifi/sockets 0770 wifi wifi
+	mkdir /data/misc/dhcp 0770 dhcp dhcp
+#	insmod /system/lib/modules/compat.ko
+	insmod /system/lib/modules/cfg80211.ko
+	insmod /system/lib/modules/mac80211.ko
+	insmod /system/lib/modules/wl12xx.ko
+	insmod /system/lib/modules/wl12xx_sdio.ko
+#	insmod /system/lib/modules/rndis_host.ko
+#	insmod /system/lib/modules/rndis_wlan.ko
+#	insmod /system/lib/modules/zd1211rw.ko
+#	insmod /system/lib/modules/ath.ko
+#	insmod /system/lib/modules/carl9170.ko
+
+#    	insmod /system/lib/modules/gator.ko
+
+# GPS
+#        insmod /system/lib/modules/gps_drv.ko
+
+# change permissions for Bluetooth/FM/GPS
+    chmod 0660 /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chmod 0660 /dev/ttyO1
+    chown bluetooth bluetooth /dev/ttyO1
+
+    chmod 0660 /sys/class/rfkill/rfkill1/state
+    chown wifi wifi /sys/class/rfkill/rfkill1/state
+
+on fs
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/system /system wait ro
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/media /data/media wait rw
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/cache /cache wait noatime nosuid nodev nomblk_io_submit
+
+# change permissions for ION driver
+    chmod 0777 /dev/ion
+
+# camera calibration - DCC folder permission
+    chown media media /data/misc/camera
+    chown media media /data/misc/camera/R12_MVEN001_LD1_ND0_IR0_SH0_FL0_SVEN001_DCCID43
+    chown media media /data/misc/camera/R12_MVEN002_LD2_ND0_IR0_SH0_FL0_SVEN002_DCCID42
+    chown media media /data/misc/camera/R8_MVEN002_LD2_ND0_IR0_SH0_FL1_SVEN003_DCCID1042
+
+# change permissions for S3D hardware
+    chown system system /sys/devices/platform/omapdss/display0/s3d_enable
+    chown system system /sys/devices/platform/omapdss/display1/s3d_enable
+    chown system system /sys/devices/platform/omapdss/display1/s3d_type
+
+# Change permissions on the governor (this is for debug only)
+    chmod 444 /proc/cmdline
+	
+service pvrsrvinit /system/vendor/bin/pvrsrvinit
+	class core
+	user root
+	group root
+	oneshot
+
+# create filesystems if necessary
+service setup_fs /system/bin/setup_fs \
+		/dev/block/platform/omap/omap_hsmmc.0/by-name/cache \
+		/dev/block/platform/omap/omap_hsmmc.0/by-name/userdata \
+		/dev/block/platform/omap/omap_hsmmc.0/by-name/media
+        class core
+        user root
+        group root
+        oneshot
+
+#shared transport user space mgr service for Bluetooth, FM and GPS
+service uim /system/bin/uim-sysfs
+	class core
+	user bluetooth
+	group bluetooth net_bt_admin
+
+service hciattach /system/bin/hciattach -l
+    user root
+# changing user to root from bluetooth is a potential security issue
+# service hciattach_legacy is used instead of hciattach because, we dont
+# have nodes named ttyHS0
+    group bluetooth net_bt_admin misc
+    disabled
+    oneshot
+
+###################################################
+# MSHIELD SMC Daemon - component required to store persistent data coming
+#   from the SMC PA to the device persistent storage
+###################################################
+service tf_daemon /system/bin/tf_daemon \
+    -d -c /vendor/etc/smc_normal_world_android_cfg.ini
+    class main
+    user system
+    group system
+
+###################################################
+# MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
+###################################################
+service smc_pa /system/bin/smc_pa_ctrl \
+    -c /vendor/etc/smc_normal_world_android_cfg.ini \
+    start /vendor/firmware/smc_pa.ift
+    class core
+    user system
+    group system
+    oneshot
+
+# create virtual SD card at /mnt/sdcard, based on the /data/media directory
+# daemon will drop to user/group system/media_rw after initializing
+# underlying files in /data/media will be created with user and group media_rw (1023)
+service sdcard /system/bin/sdcard /data/media 1023 1023
+	class late_start
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
+	class main
+	socket wpa_wlan0 dgram 660 wifi wifi
+	disabled
+	oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -aABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
+	socket wpa_wlan1 dgram 660 wifi wifi
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_bnep0 /system/bin/dhcpcd -aABKL
+	class main
+    disabled
+    oneshot
+
+service iprenew_bnep0 /system/bin/dhcpcd -n
+	class main
+    disabled
+    oneshot
+
+on property:wlan.driver.status=ok
+    chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state
+
+#service navl_server /system/bin/navd --android_log NAVD  -p3 -nav\"-c/system/etc/gps/config/pathconfigfile.txt\"
+#    disabled
+#    oneshot
+
+#userspace daemon needed for gator
+#service gatord /system/bin/gatord
+#    class main
+#    user root
+
