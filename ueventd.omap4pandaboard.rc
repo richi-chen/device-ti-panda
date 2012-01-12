@@ -5,11 +5,11 @@
 /dev/tiler                0666   system     system
 
 #for SYSLINK
-/dev/rpmsg-omx0           0660   system    system
-/dev/rpmsg-omx1           0660   system    system
-/dev/rproc_user           0660   system    system
-/dev/tf_driver            0660   system    system
-/dev/tf_ctrl              0660   system    system
+/dev/rpmsg-omx0           0660   drmrpc    drmrpc
+/dev/rpmsg-omx1           0660   drmrpc    drmrpc
+/dev/rproc_user           0660   drmrpc    drmrpc
+/dev/tf_driver            0660   drmrpc    drmrpc
+/dev/tf_ctrl              0660   drmrpc    drmrpc
 
 #for FM v4l2 Radio
 /dev/radio0               0666   system    radio

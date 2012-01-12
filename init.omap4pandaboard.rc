@@ -16,10 +16,10 @@ on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
     mkdir /data/media 0775 media_rw media_rw
     chown media_rw media_rw /data/media
-	mkdir /data/smc 0770 system system
-        chown system system /data/smc/counter.bin
-        chown system system /data/smc/storage.bin
-        chown system system /data/smc/system.bin
+	mkdir /data/smc 0770 drmrpc drmrpc
+        chown drmrpc drmrpc /data/smc/counter.bin
+        chown drmrpc drmrpc /data/smc/storage.bin
+        chown drmrpc drmrpc /data/smc/system.bin
 
 	setprop vold.post_fs_data_done 1
 
@@ -64,8 +64,8 @@ on boot
     chmod 0660 /dev/ttyO1
     chown bluetooth bluetooth /dev/ttyO1
 
-    chmod 0660 /sys/class/rfkill/rfkill1/state
-    chown wifi wifi /sys/class/rfkill/rfkill1/state
+ #   chmod 0660 /sys/class/rfkill/rfkill1/state
+ #   chown wifi wifi /sys/class/rfkill/rfkill1/state
 
 on fs
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/system /system wait ro
@@ -128,8 +128,8 @@ service hciattach /system/bin/hciattach -l
 service tf_daemon /system/bin/tf_daemon \
     -d -c /vendor/etc/smc_normal_world_android_cfg.ini
     class main
-    user system
-    group system
+    user root
+    group root
 
 ###################################################
 # MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
@@ -138,8 +138,8 @@ service smc_pa /system/bin/smc_pa_ctrl \
     -c /vendor/etc/smc_normal_world_android_cfg.ini \
     start /vendor/firmware/smc_pa.ift
     class core
-    user system
-    group system
+    user root
+    group root
     oneshot
 
 # create virtual SD card at /mnt/sdcard, based on the /data/media directory
