@@ -179,26 +179,27 @@ service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
 	disabled
 	oneshot
 
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_bnep0 /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
 service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
 	socket wpa_wlan1 dgram 660 wifi wifi
 	class main
 	disabled
 	oneshot
 
-service dhcpcd_bnep0 /system/bin/dhcpcd -aABKL
-	class main
-    disabled
-    oneshot
-
-service iprenew_bnep0 /system/bin/dhcpcd -n
-	class main
-    disabled
-    oneshot
-
 on property:wlan.driver.status=ok
     chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state
 
 #service navl_server /system/bin/navd --android_log NAVD  -p3 -nav\"-c/system/etc/gps/config/pathconfigfile.txt\"
+#	class main
 #    disabled
 #    oneshot
 

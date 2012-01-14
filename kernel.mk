@@ -3,9 +3,6 @@ KERNEL_VERBOSE="V=1"
 endif
 
 KERNEL_PATH:=$(shell pwd)/kernel
-KERNEL_DIR:=$(KERNEL_PATH)
-KLIB:=$(KERNEL_PATH)
-KLIB_BUILD:=$(KERNEL_PATH)
 
 kernel_build: 
 	cp $(TOP)/device/ti/panda/$(KERNEL_CONFIG) $(KERNEL_PATH)/arch/arm/configs/
@@ -21,7 +18,7 @@ kernel_build:
 
 ifeq (0,1)
 	cd $(TOP)/hardware/ti/wlan/mac80211/compat &&\
-	$(MAKE) ARCH=arm CROSS_COMPILE=arm-eabi-
+	$(MAKE) ARCH=arm CROSS_COMPILE=arm-eabi- KERNEL_DIR=$(KERNEL_PATH) KLIB=$(KERNEL_PATH) KLIB_BUILD=$(KERNEL_PATH)
 	mkdir -p $(TARGET_OUT)/lib/modules
 	find $(TOP)/hardware/ti/wlan/mac80211/compat/. -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
 endif

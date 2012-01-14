@@ -18,6 +18,10 @@
 PRODUCT_PACKAGES += \
     libtimemmgr
 
+#HWC Hal
+PRODUCT_PACKAGES += \
+    hwcomposer.omap4
+
 #Lib Skia test
 PRODUCT_PACKAGES += \
     SkLibTiJpeg_Test
@@ -45,6 +49,7 @@ PRODUCT_COPY_FILES := \
 	device/ti/panda/init.omap4pandaboard.usb.rc:root/init.omap4pandaboard.usb.rc \
 	device/ti/panda/ueventd.omap4pandaboard.rc:root/ueventd.omap4pandaboard.rc \
 	device/ti/panda/media_profiles.xml:system/etc/media_profiles.xml \
+	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
 	frameworks/base/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
 	frameworks/base/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
 	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
@@ -54,11 +59,7 @@ PRODUCT_COPY_FILES := \
 
 # to mount the external storage (sdcard)
 PRODUCT_COPY_FILES += \
-	device/ti/panda/vold.fstab:system/etc/vold.fstab \
-
-#PRODUCT_PACKAGES := \
-#        make_ext4fs \
-#	com.android.future.usb.accessory
+	device/ti/panda/vold.fstab:system/etc/vold.fstab
 
 PRODUCT_PACKAGES += \
        boardidentity \
@@ -70,17 +71,19 @@ PRODUCT_PROPERTY_OVERRIDES := \
 	wifi.interface=wlan0 \
 	hwui.render_dirty_regions=false
 
-#PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-#	persist.sys.usb.config=mass_storage,adb
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+	persist.sys.usb.config=mtp,adb
 
 PRODUCT_CHARACTERISTICS := tablet
 
 DEVICE_PACKAGE_OVERLAYS := \
     device/ti/panda/overlay
 
-#HWC Hal
-PRODUCT_PACKAGES += \
-    hwcomposer.omap4
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.opengles.version=131072
+
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.sf.lcd_density=160
 
 PRODUCT_PROPERTY_OVERRIDES += \
 	persist.hwc.mirroring.region=0:0:1280:720
