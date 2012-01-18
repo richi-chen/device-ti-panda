@@ -96,6 +96,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
 	audio.primary.panda \
+	audio.primary.omap4 \
 	audio.a2dp.default \
 	libaudioutils
 
