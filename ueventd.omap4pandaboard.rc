@@ -1,4 +1,11 @@
+
 /dev/pvrsrvkm             0666   system     system
+/dev/video0               0660   system     camera
+/dev/video1               0660   system     camera
+/dev/video2               0660   system     camera
+/dev/s3c-jpg              0660   system     camera
+/dev/s3c-mem              0660   system     system
+/dev/s3c-mfc              0660   system     graphics
 
 #for DSSCOMP
 /dev/dsscomp              0666   system     system
@@ -13,3 +20,6 @@
 
 #for FM v4l2 Radio
 /dev/radio0               0666   system    radio
+
+#for GC core
+/dev/gc-core              0666   system     system

@@ -145,16 +145,12 @@ PRODUCT_PACKAGES += \
 		LinaroWallpaper \
 		gatord
 
-
 $(call inherit-product, frameworks/base/build/tablet-dalvik-heap.mk)
 $(call inherit-product, hardware/ti/omap4xxx/omap4.mk)
 $(call inherit-product-if-exists, vendor/ti/proprietary/omap4/ti-omap4-vendor.mk)
-
-# TI bluetooth
 $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
-# SGX lib, Ducati firmware
 $(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vendor.mk)
-# TI Wifi/BT/FM firmware
 $(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.mk)
 $(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
 $(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
+$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
