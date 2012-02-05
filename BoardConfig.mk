@@ -16,13 +16,13 @@
 
 # These two variables are set first, so they can be overridden
 # by BoardConfigVendor.mk
-BOARD_USES_GENERIC_AUDIO := true
+BOARD_USES_GENERIC_AUDIO := false
 #BOARD_USES_TI_OMAP_MODEM_AUDIO := true
 USE_CAMERA_STUB := true
 #OMAP_ENHANCEMENT := true
 #ENHANCED_DOMX := true
 #OMAP_ENHANCEMENT_S3D := true
-BLTSVILLE_ENHANCEMENT :=true
+#BLTSVILLE_ENHANCEMENT :=true
 # Use the non-open-source parts, if they're present
 -include vendor/ti/panda/BoardConfigVendor.mk
 
@@ -43,14 +43,16 @@ TARGET_NO_BOOTLOADER := true
 TARGET_NO_RECOVERY := true
 
 BOARD_KERNEL_BASE := 0x80000000
+BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 mem=1024M@0x80000000 init=/init androidboot.console=ttyO2
 #BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 mem=1024M androidboot.console=ttyO2 vram=20M omapfb.vram=0:16M
-#BOARD_KERNEL_CMDLINE := console=tty0 console=ttyO2,115200n8 rootwait ro earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M,1:24M consoleblank=0 mem=456M@0x80000000 mem=512M@0xA0000000 init=/init androidboot.console=ttyO2
+#BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 vmalloc=128M omap_wdt.timer_margin=30 vram=48M omapfb.vram=0:24M,1:24M mem=1024M@0x80000000 init=/init androidboot.console=ttyO2
+#BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 rootwait ro earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000 init=/init androidboot.console=ttyO2
 
 TARGET_NO_RADIOIMAGE := true
 TARGET_BOARD_PLATFORM := omap4
 TARGET_BOOTLOADER_BOARD_NAME := panda 
 
-BOARD_EGL_CFG := device/ti/panda/egl.cfg
+BOARD_EGL_CFG := device/ti/richi-panda/egl.cfg
 
 #BOARD_USES_HGL := true
 #BOARD_USES_OVERLAY := true

@@ -36,9 +36,9 @@ on boot
 	write /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq 800000
 
 # TI_ST/BT/FM
-	insmod /system/lib/modules/st_drv.ko
-	insmod /system/lib/modules/btwilink.ko
-	insmod /system/lib/modules/fm_drv.ko
+#	insmod /system/lib/modules/st_drv.ko
+#	insmod /system/lib/modules/btwilink.ko
+#	insmod /system/lib/modules/fm_drv.ko
 # wi-fi
 	mkdir /data/misc/wifi/sockets 0770 wifi wifi
 	mkdir /data/misc/dhcp 0770 dhcp dhcp
@@ -63,9 +63,6 @@ on boot
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chmod 0660 /dev/ttyO1
     chown bluetooth bluetooth /dev/ttyO1
-
- #   chmod 0660 /sys/class/rfkill/rfkill1/state
- #   chown wifi wifi /sys/class/rfkill/rfkill1/state
 
 on fs
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/system /system wait ro
@@ -99,8 +96,7 @@ service pvrsrvinit /system/vendor/bin/pvrsrvinit
 # create filesystems if necessary
 service setup_fs /system/bin/setup_fs \
 		/dev/block/platform/omap/omap_hsmmc.0/by-name/cache \
-		/dev/block/platform/omap/omap_hsmmc.0/by-name/userdata \
-		/dev/block/platform/omap/omap_hsmmc.0/by-name/media
+		/dev/block/platform/omap/omap_hsmmc.0/by-name/userdata
         class core
         user root
         group root

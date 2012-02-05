@@ -5,11 +5,11 @@ endif
 KERNEL_PATH:=$(shell pwd)/kernel
 
 kernel_build: 
-	cp $(TOP)/device/ti/panda/$(KERNEL_CONFIG) $(KERNEL_PATH)/arch/arm/configs/
+	cp $(TOP)/device/ti/richi-panda/$(KERNEL_CONFIG) $(KERNEL_PATH)/arch/arm/configs/
 	cd $(KERNEL_PATH) &&\
 	$(MAKE) $(KERNEL_VERBOSE) ARCH=arm CROSS_COMPILE=arm-eabi- $(KERNEL_CONFIG) &&\
 	$(MAKE) $(KERNEL_VERBOSE) ARCH=arm CROSS_COMPILE=arm-eabi- uImage modules
-	cp $(KERNEL_PATH)/arch/arm/boot/zImage $(TOP)/device/ti/panda/kernel
+	cp $(KERNEL_PATH)/arch/arm/boot/zImage $(TOP)/device/ti/richi-panda/kernel
 	mkdir -p $(KERNEL_PATH)/modules_for_android
 	cd $(KERNEL_PATH) &&\
 	$(MAKE) ARCH=arm CROSS_COMPILE=arm-eabi- modules_install INSTALL_MOD_PATH=modules_for_android

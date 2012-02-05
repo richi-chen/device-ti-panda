@@ -35,11 +35,11 @@ PRODUCT_PROPERTY_OVERRIDES := \
 
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base.mk)
-$(call inherit-product, device/ti/panda/device.mk)
+$(call inherit-product, device/ti/richi-panda/device.mk)
 $(call inherit-product-if-exists, vendor/ti/proprietary/omap4xxx/ti-omap4-vendor.mk)
 
-PRODUCT_NAME := full_panda
-PRODUCT_DEVICE := panda
+PRODUCT_NAME := full_richi_panda
+PRODUCT_DEVICE := richi-panda
 PRODUCT_BRAND := Android
 PRODUCT_MODEL := Panda
 PRODUCT_MANUFACTURER := Texas_Instruments_Inc

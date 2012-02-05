@@ -37,29 +37,29 @@ PRODUCT_PACKAGES += \
     VTCTestApp
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
-$(call inherit-product-if-exists, device/ti/panda/kernel.mk)
-LOCAL_KERNEL := device/ti/panda/kernel
+$(call inherit-product-if-exists, device/ti/richi-panda/kernel.mk)
+LOCAL_KERNEL := device/ti/richi-panda/kernel
 else
 LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
 endif
 
 PRODUCT_COPY_FILES := \
 	$(LOCAL_KERNEL):kernel \
-	device/ti/panda/init.omap4pandaboard.rc:root/init.omap4pandaboard.rc \
-	device/ti/panda/init.omap4pandaboard.usb.rc:root/init.omap4pandaboard.usb.rc \
-	device/ti/panda/ueventd.omap4pandaboard.rc:root/ueventd.omap4pandaboard.rc \
-	device/ti/panda/media_profiles.xml:system/etc/media_profiles.xml \
+	device/ti/richi-panda/init.omap4pandaboard.rc:root/init.omap4pandaboard.rc \
+	device/ti/richi-panda/init.omap4pandaboard.usb.rc:root/init.omap4pandaboard.usb.rc \
+	device/ti/richi-panda/ueventd.omap4pandaboard.rc:root/ueventd.omap4pandaboard.rc \
+	device/ti/richi-panda/media_profiles.xml:system/etc/media_profiles.xml \
 	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
 	frameworks/base/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
 	frameworks/base/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
 	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
 	frameworks/base/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
-	device/ti/panda/android.hardware.bluetooth.xml:system/etc/permissions/android.hardware.bluetooth.xml \
-	device/ti/panda/bootanimation.zip:/system/media/bootanimation.zip
+	device/ti/richi-panda/android.hardware.bluetooth.xml:system/etc/permissions/android.hardware.bluetooth.xml \
+	device/ti/richi-panda/bootanimation.zip:/system/media/bootanimation.zip
 
 # to mount the external storage (sdcard)
 PRODUCT_COPY_FILES += \
-	device/ti/panda/vold.fstab:system/etc/vold.fstab
+	device/ti/richi-panda/vold.fstab:system/etc/vold.fstab
 
 PRODUCT_PACKAGES += \
        boardidentity \
@@ -72,21 +72,21 @@ PRODUCT_PROPERTY_OVERRIDES := \
 	hwui.render_dirty_regions=false
 
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-	persist.sys.usb.config=mtp,adb
+	persist.sys.usb.config=mtp
 
 PRODUCT_CHARACTERISTICS := tablet
 
 DEVICE_PACKAGE_OVERLAYS := \
-    device/ti/panda/overlay
+    device/ti/richi-panda/overlay
 
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.opengles.version=131072
 
-PRODUCT_PROPERTY_OVERRIDES += \
-	ro.sf.lcd_density=160
+#PRODUCT_PROPERTY_OVERRIDES += \
+#	ro.sf.lcd_density=160
 
-PRODUCT_PROPERTY_OVERRIDES += \
-	persist.hwc.mirroring.region=0:0:1280:720
+#PRODUCT_PROPERTY_OVERRIDES += \
+#	persist.hwc.mirroring.region=0:0:1280:720
 
 PRODUCT_TAGS += dalvik.gc.type-precise
 
@@ -95,7 +95,6 @@ PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
 PRODUCT_PACKAGES += \
-	audio.primary.panda \
 	audio.primary.omap4 \
 	audio.a2dp.default \
 	libaudioutils
@@ -106,7 +105,6 @@ PRODUCT_PACKAGES += \
 	hostapd.conf \
 	wifical.sh \
 	TQS_D_1.7.ini \
-	wpa_supplicant.conf \
 	TQS_D_1.7_127x.ini \
 	crda \
 	regulatory.bin \
@@ -142,22 +140,20 @@ include $(LOCAL_PATH)/ZeroXBenchmark.mk
 PRODUCT_PACKAGES += \
     	ZeroXBenchmark \
     	$(ZEROXBENCHMARK_NATIVE_APPS) \
-	AndroidTerm \
-	gatord
-
+		libglmark2-android \
+		GLMark2 \
+		LinaroWallpaper \
+		gatord
 
 $(call inherit-product, frameworks/base/build/tablet-dalvik-heap.mk)
 $(call inherit-product, hardware/ti/omap4xxx/omap4.mk)
 $(call inherit-product-if-exists, vendor/ti/proprietary/omap4/ti-omap4-vendor.mk)
-
-# TI bluetooth
 $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
-# SGX lib, Ducati firmware
-$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vendor.mk)
-#$(call inherit-product-if-exists, vendor/ti/panda/device-vendor.mk)
-# TI Wifi firmware
-#$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
-#$(call inherit-product, device/ti/panda/wl12xx/ti-wl12xx-vendor.mk)
-$(call inherit-product, device/ti/panda/proprietary-open/install-binaries.mk)
-$(call inherit-product, device/ti/panda/zd1211/zd1211-wlan-fw-products.mk)
+#$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vendor.mk)
+$(call inherit-product-if-exists, vendor/ti/panda/device-vendor.mk)
+$(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.mk)
+$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
+#$(call inherit-product, device/ti/richi-panda/wl12xx/ti-wl12xx-vendor.mk)
+$(call inherit-product, device/ti/richi-panda/zd1211/zd1211-wlan-fw-products.mk)
 $(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
+$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
