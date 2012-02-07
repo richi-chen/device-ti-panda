@@ -1,19 +1,24 @@
 Running Android on pandaboard:
 
-This assumes that you have all the necessary proprietary binaries.
+Get source:
+repo init -u git://github.com/richi-chen/Pandaboard-ICS-repo.git -b omapzoom
+repo sync
 
-When working with AOSP, download them from:
-http://code.google.com/android/nexus/drivers.html#panda
-The master branch in AOSP works with the latest version of those drivers.
+Apply patch:
+cp device/ti/richi-panda/panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch kernel/
+cd kernel/
+git apply panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch
+cd ..
+cp device/ti/richi-panda/panda_omapzoom_audio_hal_for_ics.patch device/ti/common-open/
+cd device/ti/common-open/
+git apply panda_omapzoom_audio_hal_for_ics.patch
+cd ../../..
 
-Unarchive each file at the root of your source tree (with tar zxvf), and
-execute the included shell script, still at the root of tour source tree.
-That will create a vendor tree that contains the necessary files.
-They can be unarchived and extracted in any order.
+Building process:
+make
+make kernel_build
+make
 
-For Googlers working in Google's full internal tree (i.e. with
-vendor/ti/proprietary and related projects) or in equivalent
-situations, this is done automatically.
 
 Board setup:
 Power supply

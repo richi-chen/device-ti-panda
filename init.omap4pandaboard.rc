@@ -126,6 +126,7 @@ service tf_daemon /system/bin/tf_daemon \
     class main
     user root
     group root
+    oneshot
 
 ###################################################
 # MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
