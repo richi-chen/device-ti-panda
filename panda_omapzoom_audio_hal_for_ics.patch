@@ -1,0 +1,36 @@
+diff --git a/audio/Android.mk b/audio/Android.mk
+index 0265f59..738718b 100644
+--- a/audio/Android.mk
++++ b/audio/Android.mk
+@@ -20,6 +20,8 @@ ifneq (,$(findstring blaze_tablet, $(TARGET_PRODUCT)))
+     LOCAL_MODULE := audio.primary.blaze_tablet
+ else ifneq (,$(findstring blaze, $(TARGET_PRODUCT)))
+     LOCAL_MODULE := audio.primary.blaze
++else ifneq (,$(findstring panda, $(TARGET_PRODUCT)))
++    LOCAL_MODULE := audio.primary.panda
+ else
+     LOCAL_MODULE := audio.primary.generic
+ endif
+diff --git a/audio/audio_hw.c b/audio/audio_hw.c
+index f3b83bd..dc20deb 100644
+--- a/audio/audio_hw.c
++++ b/audio/audio_hw.c
+@@ -220,6 +220,7 @@
+ #define PRODUCT_DEVICE_PROPERTY "ro.product.device"
+ #define PRODUCT_DEVICE_BLAZE    "blaze"
+ #define PRODUCT_DEVICE_TABLET   "blaze_tablet"
++#define PRODUCT_DEVICE_PANDA    "richi-panda"
+ 
+ /* fm */
+ static bool fm_enable = false;
+@@ -768,6 +769,10 @@ static int get_boardtype(struct blaze_audio_device *adev)
+             adev->board_type = TABLET;
+             adev->sidetone_capture = 0;
+     }
++    else if(!strcmp(board, PRODUCT_DEVICE_PANDA)) {
++            adev->board_type = TABLET;
++            adev->sidetone_capture = 0;
++    }
+     else
+         return -EINVAL;
+ 

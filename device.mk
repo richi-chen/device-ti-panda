@@ -95,7 +95,7 @@ PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
 PRODUCT_PACKAGES += \
-	audio.primary.omap4 \
+	audio.primary.panda \
 	audio.a2dp.default \
 	libaudioutils
 
