@@ -15,6 +15,9 @@ git apply panda_omapzoom_audio_hal_for_ics.patch
 cd ../../..
 
 Building process:
+. build/envsetup.sh
+lunch full_richi_panda-eng
+make clean (clean build if needed)
 make
 make kernel_build
 make
