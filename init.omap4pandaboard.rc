@@ -10,7 +10,7 @@ on early-init
     mkdir /mnt/external_sd 0000 system system
 
     export THIRD_VOLUME_STORAGE /mnt/usb_storage
-    mkdir /mnt/usb_storage 0000 system system
+    mkdir /mnt/usb_storage 0777 system system
 
 on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
@@ -127,6 +127,7 @@ service tf_daemon /system/bin/tf_daemon \
     user root
     group root
     oneshot
+    disabled
 
 ###################################################
 # MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
@@ -183,6 +184,11 @@ service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
 	disabled
 	oneshot
 
+service iprenew_eth0 /system/bin/dhcpcd -n
+	class main
+    disabled
+    oneshot
+
 service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
 	class main
 	disabled
@@ -198,6 +204,9 @@ service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
 	class main
 	disabled
 	oneshot
+
+on property:init.svc.smc_pa=stopped
+	start tf_daemon
 
 on property:wlan.driver.status=ok
     chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state
