@@ -126,6 +126,8 @@ service tf_daemon /system/bin/tf_daemon \
     class main
     user root
     group root
+    oneshot
+    disabled
 
 ###################################################
 # MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
@@ -137,6 +139,13 @@ service smc_pa /system/bin/smc_pa_ctrl \
     user root
     group root
     oneshot
+
+# bugreport is triggered by holding down volume down, volume up and home
+service bugreport /system/bin/bugmailer.sh -v
+	class main
+	disabled
+	oneshot
+	keycodes 114 115 102
 
 # create virtual SD card at /mnt/sdcard, based on the /data/media directory
 # daemon will drop to user/group system/media_rw after initializing
@@ -175,6 +184,11 @@ service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
 	disabled
 	oneshot
 
+service iprenew_eth0 /system/bin/dhcpcd -n
+	class main
+    disabled
+    oneshot
+
 service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
 	class main
 	disabled
@@ -190,6 +204,9 @@ service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
 	class main
 	disabled
 	oneshot
+
+on property:init.svc.smc_pa=stopped
+	start tf_daemon
 
 on property:wlan.driver.status=ok
     chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state

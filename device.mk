@@ -115,6 +115,18 @@ PRODUCT_PACKAGES += \
 	make_ext4fs \
 	setup_fs
 
+# for bugmailer
+PRODUCT_PACKAGES += send_bug
+PRODUCT_COPY_FILES += \
+	system/extras/bugmailer/bugmailer.sh:system/bin/bugmailer.sh \
+	system/extras/bugmailer/send_bug:system/bin/send_bug
+
+# tinyalsa utils
+PRODUCT_PACKAGES += \
+	tinymix \
+	tinyplay \
+	tinycap
+
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
@@ -155,5 +167,5 @@ $(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.
 $(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
 #$(call inherit-product, device/ti/richi-panda/wl12xx/ti-wl12xx-vendor.mk)
 $(call inherit-product, device/ti/richi-panda/zd1211/zd1211-wlan-fw-products.mk)
-$(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
+#$(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
 $(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
