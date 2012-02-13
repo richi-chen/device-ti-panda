@@ -20,8 +20,8 @@ BOARD_USES_GENERIC_AUDIO := false
 #BOARD_USES_TI_OMAP_MODEM_AUDIO := true
 USE_CAMERA_STUB := true
 OMAP_ENHANCEMENT := true
+OMAP_ENHANCEMENT_S3D := true
 ENHANCED_DOMX := true
-#OMAP_ENHANCEMENT_S3D := true
 BLTSVILLE_ENHANCEMENT :=true
 # Use the non-open-source parts, if they're present
 -include vendor/ti/panda/BoardConfigVendor.mk
