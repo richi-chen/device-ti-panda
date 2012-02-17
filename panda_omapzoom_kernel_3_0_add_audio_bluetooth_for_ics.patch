@@ -141,11 +141,11 @@ index 1cc21c7..d2e5f0c 100644
  	u16 hs_right_step;
  	u16 hf_left_step;
 diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 14cf1d8..b6e06cd 100644
+index 773722d..244689d 100644
 --- a/sound/soc/codecs/twl6040.c
 +++ b/sound/soc/codecs/twl6040.c
-@@ -88,6 +88,8 @@ struct twl6040_data {
- 	int non_lp;
+@@ -87,6 +87,8 @@ struct twl6040_data {
+ 	int pll;
  	int power_mode_forced;
  	int headset_mode;
 +	int hs_switch_dev;
@@ -153,7 +153,7 @@ index 14cf1d8..b6e06cd 100644
  	unsigned int clk_in;
  	unsigned int sysclk;
  	struct regulator *vddhf_reg;
-@@ -959,17 +961,22 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
+@@ -954,17 +956,22 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
  	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
  	int status, state = 0;
  
@@ -184,7 +184,7 @@ index 14cf1d8..b6e06cd 100644
  		switch_set_state(&priv->hs_jack.sdev, !!state);
  }
  
-@@ -1801,20 +1808,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1766,20 +1773,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  	codec->control_data = dev_get_drvdata(codec->dev->parent);
  	codec->dapm.idle_bias_off = 1;
  
@@ -226,7 +226,7 @@ index 14cf1d8..b6e06cd 100644
  	}
  
  	if (pdata && pdata->ep_step)
-@@ -1880,12 +1895,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1845,12 +1860,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  
  	/* use switch-class based headset reporting if platform requires it */
  	jack = &priv->hs_jack;
@@ -241,7 +241,7 @@ index 14cf1d8..b6e06cd 100644
  
  	ret = twl6040_request_irq(codec->control_data, TWL6040_IRQ_PLUG,
  				twl6040_audio_handler, IRQF_NO_SUSPEND,
-@@ -1912,8 +1929,9 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1877,8 +1894,9 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  bias_err:
  	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
  irq_err:
@@ -252,7 +252,7 @@ index 14cf1d8..b6e06cd 100644
  epwork_err:
  reg_err:
  	if (priv->vddhf_reg)
-@@ -1937,7 +1955,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
+@@ -1902,7 +1920,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
  	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
  	if (priv->vddhf_reg)
  		regulator_put(priv->vddhf_reg);
