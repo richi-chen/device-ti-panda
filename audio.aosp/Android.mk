@@ -19,7 +19,7 @@ include $(CLEAR_VARS)
 ifneq (,$(findstring panda, $(TARGET_PRODUCT)))
     LOCAL_MODULE := audio.primary.omap4
 else
-    LOCAL_MODULE := audio.primary.generic
+    LOCAL_MODULE := audio.primary.generic_aosp
 endif
 
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw

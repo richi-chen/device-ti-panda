@@ -79,11 +79,13 @@
 #define MIXER_DL1_MM_EXT_SWITCH             "DL1 MM_EXT Switch"
 #define MIXER_VOICE_CAPTURE_MIXER_CAPTURE   "Voice Capture Mixer Capture"
 
-#define MIXER_HS_LEFT_PLAYBACK              "HS Left Playback"
-#define MIXER_HS_RIGHT_PLAYBACK             "HS Right Playback"
-#define MIXER_HF_LEFT_PLAYBACK              "HF Left Playback"
-#define MIXER_HF_RIGHT_PLAYBACK             "HF Right Playback"
-#define MIXER_EARPHONE_ENABLE_SWITCH        "Earphone Enable Switch"
+#define MIXER_HS_LEFT_PLAYBACK              "Headset Left Playback"
+#define MIXER_HS_RIGHT_PLAYBACK             "Headset Right Playback"
+#define MIXER_HF_LEFT_PLAYBACK              "Handsfree Left Playback"
+#define MIXER_HF_RIGHT_PLAYBACK             "Handsfree Right Playback"
+#define MIXER_EARPHONE_ENABLE_SWITCH        "Earphone Playback Switch"
+#define MIXER_HS_POWER_MODE                 "Headset Power Mode"
+#define MIXER_HS_LOW_POWER_MODE             "Low-Power"
 
 #define MIXER_ANALOG_LEFT_CAPTURE_ROUTE     "Analog Left Capture Route"
 #define MIXER_ANALOG_RIGHT_CAPTURE_ROUTE    "Analog Right Capture Route"
@@ -118,7 +120,7 @@
 #define MIXER_4KHZ_LPF_0DB                  "4Khz LPF   0dB"
 
 
-/* ALSA cards for OMAP4 */
+/* ALSA cards for OMAP */
 #define CARD_OMAP4_ABE 0
 #define CARD_OMAP4_HDMI 1
 #define CARD_OMAP4_USB 2
@@ -750,6 +752,8 @@ static int get_boardtype(struct omap4_audio_device *adev)
     else
         return -EINVAL;
 
+    LOGI("boardtype used: %s(%d)", board, adev->board_type);
+
     return 0;
 }
 /* The enable flag when 0 makes the assumption that enums are disabled by
@@ -1305,11 +1309,11 @@ static int start_output_stream(struct omap4_stream_out *out)
         card = CARD_OMAP4_HDMI;
         port = PORT_MM;
     }
-    if((adev->devices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET) ||
-        (adev->devices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET)) {
-        card = CARD_OMAP4_USB;
-        port = PORT_MM;
-    }
+//    if((adev->devices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET) ||
+//        (adev->devices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET)) {
+//        card = CARD_OMAP4_USB;
+//        port = PORT_MM;
+//    }
     /* default to low power:
      *  NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
      */

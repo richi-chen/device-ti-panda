@@ -95,7 +95,7 @@ PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
 PRODUCT_PACKAGES += \
-	audio.primary.panda \
+	audio.primary.omap4 \
 	audio.a2dp.default \
 	libaudioutils
 
@@ -155,10 +155,14 @@ PRODUCT_PACKAGES += \
 		libglmark2-android \
 		GLMark2 \
 		LinaroWallpaper \
+		powertop \
 		gatord
 
 # external packages
 PRODUCT_PACKAGES += \
+	AndroidTerm \
+	FileManager \
+	Superuser \
 	replicaisland
 
 

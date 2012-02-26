@@ -127,11 +127,53 @@ index d49150d..b47a3ff 100644
  };
  
  static struct twl4030_codec_data twl6040_codec = {
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 6cbced5..64b616a 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -794,23 +794,28 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 
+ 		static struct regulator_consumer_supply usb3v3;
+ 		int regulator;
++
+ 		if (twl_has_regulator()) {
++			/* this is a template that gets copied */
++			struct regulator_init_data usb_fixed = {
++				.constraints.valid_modes_mask =
++					REGULATOR_MODE_NORMAL
++					| REGULATOR_MODE_STANDBY,
++				.constraints.valid_ops_mask =
++					REGULATOR_CHANGE_MODE
++					| REGULATOR_CHANGE_STATUS,
++			};
++
+ 			if (features & TWL6032_SUBCLASS) {
+ 				usb3v3.supply =	"ldousb";
+ 				regulator = TWL6032_REG_LDOUSB;
+-				child = add_regulator_linked(regulator,
+-							     pdata->ldousb,
+-							     &usb3v3, 1,
+-							     features);
+ 			} else {
+ 				usb3v3.supply = "vusb";
+ 				regulator = TWL6030_REG_VUSB;
+-				child = add_regulator_linked(regulator,
+-							     pdata->vusb,
+-							     &usb3v3, 1,
+-							     features);
+ 			}
+-
++			child = add_regulator_linked(regulator, &usb_fixed,
++							&usb3v3, 1,
++							features);
+ 			if (IS_ERR(child))
+ 				return PTR_ERR(child);
+ 		}
 diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 1cc21c7..d2e5f0c 100644
+index 3c08b06..e233650 100644
 --- a/include/linux/i2c/twl.h
 +++ b/include/linux/i2c/twl.h
-@@ -753,6 +753,8 @@ struct twl4030_codec_audio_data {
+@@ -773,6 +773,8 @@ struct twl4030_codec_audio_data {
  	unsigned int check_defaults:1;
  	unsigned int reset_registers:1;
  	unsigned int hs_extmute:1;
@@ -141,7 +183,7 @@ index 1cc21c7..d2e5f0c 100644
  	u16 hs_right_step;
  	u16 hf_left_step;
 diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 773722d..244689d 100644
+index 1aa2f86..fce4481 100644
 --- a/sound/soc/codecs/twl6040.c
 +++ b/sound/soc/codecs/twl6040.c
 @@ -87,6 +87,8 @@ struct twl6040_data {
@@ -153,7 +195,7 @@ index 773722d..244689d 100644
  	unsigned int clk_in;
  	unsigned int sysclk;
  	struct regulator *vddhf_reg;
-@@ -954,17 +956,22 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
+@@ -954,18 +956,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
  	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
  	int status, state = 0;
  
@@ -163,6 +205,8 @@ index 773722d..244689d 100644
 -	status = twl6040_read_reg_volatile(codec, TWL6040_REG_STATUS);
 -	if (status & TWL6040_PLUGCOMP)
 -		state = report;
+-
+-	mutex_unlock(&priv->mutex);
 +	if (priv->hs_forced_hs_state) {
 +		dev_dbg(codec->dev, "Forcing HS state to %i\n",
 +			priv->hs_forced_hs_state);
@@ -173,17 +217,18 @@ index 773722d..244689d 100644
 +		status = twl6040_read_reg_volatile(codec, TWL6040_REG_STATUS);
 +		if (status & TWL6040_PLUGCOMP)
 +			state = report;
- 
--	mutex_unlock(&priv->mutex);
++
 +		mutex_unlock(&priv->mutex);
++		if (priv->hs_switch_dev && &priv->hs_jack.sdev)
++			switch_set_state(&priv->hs_jack.sdev, !!state);
 +	}
  
  	snd_soc_jack_report(jack, state, report);
 -	if (&priv->hs_jack.sdev)
-+	if (priv->hs_switch_dev && &priv->hs_jack.sdev)
- 		switch_set_state(&priv->hs_jack.sdev, !!state);
+-		switch_set_state(&priv->hs_jack.sdev, !!state);
  }
  
+ void twl6040_hs_jack_detect(struct snd_soc_codec *codec,
 @@ -1766,20 +1773,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  	codec->control_data = dev_get_drvdata(codec->dev->parent);
  	codec->dapm.idle_bias_off = 1;
