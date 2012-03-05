@@ -10,7 +10,7 @@ on early-init
     mkdir /mnt/external_sd 0000 system system
 
     export THIRD_VOLUME_STORAGE /mnt/usb_storage
-    mkdir /mnt/usb_storage 0777 system system
+    mkdir /mnt/usb_storage 0000 system system
 
 on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool

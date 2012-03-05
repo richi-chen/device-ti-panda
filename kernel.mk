@@ -2,6 +2,8 @@ ifneq ($(strip $(SHOW_COMMANDS)),)
 KERNEL_VERBOSE="V=1"
 endif
 
+ifeq (full_richi_panda,$(TARGET_PRODUCT))
+
 KERNEL_PATH:=$(shell pwd)/kernel
 
 kernel_build: 
@@ -30,4 +32,5 @@ ifeq (0,1)
 	find $(TOP)/external/gator/driver/. -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
 endif
 
+endif
 

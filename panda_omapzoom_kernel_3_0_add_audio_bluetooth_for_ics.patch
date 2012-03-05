@@ -183,10 +183,10 @@ index 3c08b06..e233650 100644
  	u16 hs_right_step;
  	u16 hf_left_step;
 diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 1aa2f86..fce4481 100644
+index 3f95ea2..c86918d 100644
 --- a/sound/soc/codecs/twl6040.c
 +++ b/sound/soc/codecs/twl6040.c
-@@ -87,6 +87,8 @@ struct twl6040_data {
+@@ -89,6 +89,8 @@ struct twl6040_data {
  	int pll;
  	int power_mode_forced;
  	int headset_mode;
@@ -195,7 +195,7 @@ index 1aa2f86..fce4481 100644
  	unsigned int clk_in;
  	unsigned int sysclk;
  	struct regulator *vddhf_reg;
-@@ -954,18 +956,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
+@@ -956,18 +958,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
  	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
  	int status, state = 0;
  
@@ -229,7 +229,7 @@ index 1aa2f86..fce4481 100644
  }
  
  void twl6040_hs_jack_detect(struct snd_soc_codec *codec,
-@@ -1766,20 +1773,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1770,20 +1777,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  	codec->control_data = dev_get_drvdata(codec->dev->parent);
  	codec->dapm.idle_bias_off = 1;
  
@@ -271,7 +271,7 @@ index 1aa2f86..fce4481 100644
  	}
  
  	if (pdata && pdata->ep_step)
-@@ -1845,12 +1860,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1849,12 +1864,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  
  	/* use switch-class based headset reporting if platform requires it */
  	jack = &priv->hs_jack;
@@ -284,23 +284,22 @@ index 1aa2f86..fce4481 100644
  		}
 +	}
  
- 	ret = twl6040_request_irq(codec->control_data, TWL6040_IRQ_PLUG,
- 				twl6040_audio_handler, IRQF_NO_SUSPEND,
-@@ -1877,8 +1894,9 @@ static int twl6040_probe(struct snd_soc_codec *codec)
- bias_err:
+ 	wake_lock_init(&priv->wake_lock, WAKE_LOCK_SUSPEND, "twl6040");
+ 
+@@ -1884,7 +1901,8 @@ bias_err:
  	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
  irq_err:
+ 	wake_lock_destroy(&priv->wake_lock);
 -	switch_dev_unregister(&jack->sdev);
- 	destroy_workqueue(priv->ep_workqueue);
 +	if (priv->hs_switch_dev)
 +		switch_dev_unregister(&jack->sdev);
+ 	destroy_workqueue(priv->ep_workqueue);
  epwork_err:
  reg_err:
- 	if (priv->vddhf_reg)
-@@ -1902,7 +1920,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
- 	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
+@@ -1910,7 +1928,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
  	if (priv->vddhf_reg)
  		regulator_put(priv->vddhf_reg);
+ 	wake_lock_destroy(&priv->wake_lock);
 -	switch_dev_unregister(&jack->sdev);
 +	if (priv->hs_switch_dev)
 +		switch_dev_unregister(&jack->sdev);
