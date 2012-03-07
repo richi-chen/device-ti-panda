@@ -4,7 +4,8 @@ endif
 
 ifeq (full_richi_panda,$(TARGET_PRODUCT))
 
-KERNEL_PATH:=$(shell pwd)/kernel
+export KERNEL_PATH:=$(shell pwd)/kernel
+export WLAN_PATH:=$(shell pwd)/hardware/ti/wlan/mac80211/compat
 
 kernel_build: 
 	cp $(TOP)/device/ti/richi-panda/$(KERNEL_CONFIG) $(KERNEL_PATH)/arch/arm/configs/
@@ -19,10 +20,10 @@ kernel_build:
 	find $(KERNEL_PATH)/modules_for_android -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
 
 ifeq (1,1)
-	cd $(TOP)/hardware/ti/wlan/mac80211/compat &&\
+	cd $(WLAN_PATH) &&\
 	$(MAKE) ARCH=arm CROSS_COMPILE=arm-eabi- KERNEL_DIR=$(KERNEL_PATH) KLIB=$(KERNEL_PATH) KLIB_BUILD=$(KERNEL_PATH)
 	mkdir -p $(TARGET_OUT)/lib/modules
-	find $(TOP)/hardware/ti/wlan/mac80211/compat/. -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
+	find $(WLAN_PATH)/. -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
 endif
 
 ifeq (0,1)
@@ -31,6 +32,9 @@ ifeq (0,1)
 	mkdir -p $(TARGET_OUT)/lib/modules
 	find $(TOP)/external/gator/driver/. -name "*.ko" -exec $(ACP) -fpt {} $(TARGET_OUT)/lib/modules/ \;
 endif
+
+kernel_clean:
+	$(MAKE) -C $(KERNEL_PATH) ARCH=arm  distclean
 
 endif
 

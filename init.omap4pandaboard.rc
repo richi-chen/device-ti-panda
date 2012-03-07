@@ -6,11 +6,13 @@ on early-init
     # for backwards compatibility
     symlink /mnt/sdcard /sdcard
 
-    export SECOND_VOLUME_STORAGE /mnt/external_sd
-    mkdir /mnt/external_sd 0000 system system
+# create Ext SDcard mountpoint
+    mkdir /mnt/ext_sdcard 0000 system system
 
-    export THIRD_VOLUME_STORAGE /mnt/usb_storage
-    mkdir /mnt/usb_storage 0000 system system
+# create removable USB Mass Storage mountpoints
+    mkdir /mnt/ext_usb1 0000 system system
+    mkdir /mnt/ext_usb2 0000 system system
+
 
 on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
@@ -46,7 +48,7 @@ on boot
 	insmod /system/lib/modules/cfg80211.ko
 	insmod /system/lib/modules/mac80211.ko
 	insmod /system/lib/modules/wl12xx.ko
-	insmod /system/lib/modules/wl12xx_sdio.ko
+#	insmod /system/lib/modules/wl12xx_sdio.ko
 #	insmod /system/lib/modules/rndis_host.ko
 #	insmod /system/lib/modules/rndis_wlan.ko
 #	insmod /system/lib/modules/zd1211rw.ko
@@ -156,6 +158,11 @@ service sdcard /system/bin/sdcard /data/media 1023 1023
 service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
 	class main
 	socket wpa_wlan0 dgram 660 wifi wifi
+	disabled
+	oneshot
+
+service p2p_supplicant /system/bin/wpa_supplicant -Dnl80211 -ip2p_wlan0
+	socket wpa_p2p_wlan0 dgram 660 wifi wifi
 	disabled
 	oneshot
 
