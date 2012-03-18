@@ -36,5 +36,8 @@ endif
 kernel_clean:
 	$(MAKE) -C $(KERNEL_PATH) ARCH=arm  distclean
 
+wl12xx_compat_clean:
+	$(MAKE) -C $(WLAN_PATH) KERNEL_DIR=$(KERNEL_PATH) KLIB=$(KERNEL_PATH) KLIB_BUILD=$(KERNEL_PATH) CROSS_COMPILE=arm-eabi- ARCH=arm clean
+
 endif
 

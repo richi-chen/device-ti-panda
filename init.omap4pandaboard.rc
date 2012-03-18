@@ -48,12 +48,13 @@ on boot
 	insmod /system/lib/modules/cfg80211.ko
 	insmod /system/lib/modules/mac80211.ko
 	insmod /system/lib/modules/wl12xx.ko
-#	insmod /system/lib/modules/wl12xx_sdio.ko
+	insmod /system/lib/modules/wl12xx_sdio.ko
 #	insmod /system/lib/modules/rndis_host.ko
 #	insmod /system/lib/modules/rndis_wlan.ko
 #	insmod /system/lib/modules/zd1211rw.ko
 #	insmod /system/lib/modules/ath.ko
 #	insmod /system/lib/modules/carl9170.ko
+#	insmod /system/lib/modules/rtl8187.ko
 
 #    	insmod /system/lib/modules/gator.ko
 
@@ -71,6 +72,12 @@ on fs
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/media /data/media wait rw
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/cache /cache wait noatime nosuid nodev nomblk_io_submit
+
+# H264 Encoder Profile setting
+# 1 - Base Profile
+# 2 - Main Profile
+# 8 - High Profile
+	setprop video.h264enc.profile 1
 
 # change permissions for ION driver
     chmod 0777 /dev/ion
