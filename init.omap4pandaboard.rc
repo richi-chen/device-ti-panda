@@ -37,10 +37,6 @@ on boot
 	write /sys/devices/system/cpu/cpufreq/interactive/min_sample_time 20000
 	write /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq 800000
 
-# TI_ST/BT/FM
-#	insmod /system/lib/modules/st_drv.ko
-#	insmod /system/lib/modules/btwilink.ko
-#	insmod /system/lib/modules/fm_drv.ko
 # wi-fi
 	mkdir /data/misc/wifi/sockets 0770 wifi wifi
 	mkdir /data/misc/dhcp 0770 dhcp dhcp
@@ -60,12 +56,6 @@ on boot
 
 # GPS
 #        insmod /system/lib/modules/gps_drv.ko
-
-# change permissions for Bluetooth/FM/GPS
-    chmod 0660 /sys/class/rfkill/rfkill0/state
-    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
-    chmod 0660 /dev/ttyO1
-    chown bluetooth bluetooth /dev/ttyO1
 
 on fs
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/system /system wait ro
@@ -87,6 +77,12 @@ on fs
     chown media media /data/misc/camera/R12_MVEN001_LD1_ND0_IR0_SH0_FL0_SVEN001_DCCID43
     chown media media /data/misc/camera/R12_MVEN002_LD2_ND0_IR0_SH0_FL0_SVEN002_DCCID42
     chown media media /data/misc/camera/R8_MVEN002_LD2_ND0_IR0_SH0_FL1_SVEN003_DCCID1042
+
+# change permissions for Bluetooth/FM/GPS
+    chmod 0600 /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chmod 0600 /dev/ttyO1
+    chown bluetooth bluetooth /dev/ttyO1
 
 # change permissions for S3D hardware
     chown system system /sys/devices/platform/omapdss/display0/s3d_enable
