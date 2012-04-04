@@ -58,7 +58,7 @@ on boot
 #    	insmod /system/lib/modules/gator.ko
 
 # GPS
-#        insmod /system/lib/modules/gps_drv.ko
+        insmod /system/lib/modules/gps_drv.ko
 
 on fs
 	mount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/system /system wait ro
@@ -224,13 +224,7 @@ on property:init.svc.smc_pa=stopped
 on property:wlan.driver.status=ok
     chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state
 
-#service navl_server /system/bin/navd --android_log NAVD  -p3 -nav\"-c/system/etc/gps/config/pathconfigfile.txt\"
-#	class main
-#    disabled
-#    oneshot
-
-#userspace daemon needed for gator
-#service gatord /system/bin/gatord
-#    class main
-#    user root
-
+service navl_server /system/bin/navd --android_log NAVD  -p3 -nav\"-c/system/etc/gps/config/pathconfigfile.txt\"
+	class main
+	disabled
+	oneshot
