@@ -175,4 +175,4 @@ $(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vend
 $(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.mk)
 $(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
 $(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
-$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
+$(call inherit-product-if-exists, device/ti/richi-panda/proprietary-open/ducati-full_richi_panda.mk)
