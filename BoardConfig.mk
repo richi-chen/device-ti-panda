@@ -23,6 +23,7 @@ OMAP_ENHANCEMENT := true
 OMAP_ENHANCEMENT_S3D := true
 ENHANCED_DOMX := true
 BLTSVILLE_ENHANCEMENT :=true
+#BLUETI_ENHANCEMENT := true
 # Use the non-open-source parts, if they're present
 -include vendor/ti/panda/BoardConfigVendor.mk
 
@@ -31,6 +32,7 @@ KERNEL_CONFIG := richi-panda_defconfig
 
 # TI config
 CFG_FM_SERVICE_TI := yes
+TI_OMAP4_CAMERAHAL_VARIANT := true
 
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
