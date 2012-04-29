@@ -23,7 +23,7 @@ OMAP_ENHANCEMENT := true
 OMAP_ENHANCEMENT_S3D := true
 ENHANCED_DOMX := true
 BLTSVILLE_ENHANCEMENT :=true
-#BLUETI_ENHANCEMENT := true
+USE_ITTIAM_AAC := true
 # Use the non-open-source parts, if they're present
 -include vendor/ti/panda/BoardConfigVendor.mk
 
@@ -45,7 +45,8 @@ TARGET_NO_BOOTLOADER := true
 #TARGET_NO_RECOVERY := true
 
 BOARD_KERNEL_BASE := 0x80000000
-BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 mem=1024M@0x80000000 init=/init androidboot.console=ttyO2
+# BOARD_KERNEL_CMDLINE
+#BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 mem=1024M@0x80000000 init=/init androidboot.console=ttyO2
 #BOARD_KERNEL_CMDLINE := console=ttyO2,115200n8 rootwait ro earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000 omapfb.mode=dvi:1920x1080MR-24@60 init=/init androidboot.console=ttyO2
 
 TARGET_NO_RADIOIMAGE := true
@@ -85,8 +86,10 @@ BOARD_HOSTAPD_DRIVER             := NL80211
 BOARD_HOSTAPD_PRIVATE_LIB        := lib_driver_cmd_wl12xx
 BOARD_WLAN_DEVICE                := wl12xx_mac80211
 BOARD_SOFTAP_DEVICE              := wl12xx_mac80211
-#WIFI_DRIVER_MODULE_PATH          := "/system/lib/modules/wl12xx_sdio.ko"
-#WIFI_DRIVER_MODULE_NAME          := "wl12xx_sdio"
+WIFI_DRIVER_MODULE_PATH          := "/system/lib/modules/wl12xx_sdio.ko"
+WIFI_DRIVER_MODULE_NAME          := "wl12xx_sdio"
+#WIFI_DRIVER_MODULE_PATH          := "/system/lib/modules/wlcore_sdio.ko"
+#WIFI_DRIVER_MODULE_NAME          := "wlcore_sdio"
 WIFI_FIRMWARE_LOADER             := ""
 COMMON_GLOBAL_CFLAGS += -DUSES_TI_MAC80211
 endif
@@ -95,6 +98,9 @@ ifdef OMAP_ENHANCEMENT
 COMMON_GLOBAL_CFLAGS += -DOMAP_ENHANCEMENT -DTARGET_OMAP4
 ifdef OMAP_ENHANCEMENT_S3D
 COMMON_GLOBAL_CFLAGS += -DOMAP_ENHANCEMENT_S3D
+endif
+ifdef USE_ITTIAM_AAC
+COMMON_GLOBAL_CFLAGS += -DUSE_ITTIAM_AAC
 endif
 endif
 

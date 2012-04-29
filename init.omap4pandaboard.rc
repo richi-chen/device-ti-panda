@@ -51,7 +51,7 @@ on boot
 	insmod /system/lib/modules/wl12xx.ko
 #	insmod /system/lib/modules/wl18xx.ko
 #	insmod /system/lib/modules/wlcore_sdio.ko
-	insmod /system/lib/modules/wl12xx_sdio.ko
+#	insmod /system/lib/modules/wl12xx_sdio.ko
 #	insmod /system/lib/modules/rndis_wlan.ko
 #	insmod /system/lib/modules/zd1211rw.ko
 #	insmod /system/lib/modules/ath.ko

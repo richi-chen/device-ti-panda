@@ -25,6 +25,9 @@
          low power mode -->
     <bool translatable="false" name="config_bluetooth_adapter_quick_switch">false</bool>
 
+    <!-- If this is true, the screen will come on when you unplug usb/power/whatever. -->
+    <bool name="config_unplugTurnsOnScreen">true</bool>
+
     <!-- Component name of the service providing network location support. -->
     <string name="config_networkLocationProvider">com.google.android.location.NetworkLocationProvider</string>
 
@@ -113,6 +116,4 @@
          is false) to set up a periodic wake up scan so that the device can connect to a new access
          point on the move. A value of 0 means no periodic scans will be used in the framework. -->
     <integer translatable="false" name="config_wifi_framework_scan_interval">0</integer>
-     <!-- Component name of the service providing network location support. -->
-    <string name="config_networkLocationProvider">com.google.android.location.NetworkLocationProvider</string>
 </resources>
