@@ -1,0 +1,308 @@
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index d49150d..b47a3ff 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -31,6 +31,9 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/wl12xx.h>
++#include <linux/skbuff.h>
++#include <linux/ti_wilink_st.h>
++#include <plat/omap-serial.h>
+ #include <linux/memblock.h>
+ 
+ #include <mach/hardware.h>
+@@ -65,6 +68,8 @@
+ #include "prm-regbits-44xx.h"
+ #include "prm44xx.h"
+ 
++#define WILINK_UART_DEV_NAME	"/dev/ttyO1"
++
+ #define GPIO_HUB_POWER		1
+ #define GPIO_HUB_NRESET		62
+ #define GPIO_WIFI_PMENA		43
+@@ -74,16 +79,78 @@
+ #define HDMI_GPIO_LS_OE 41 /* Level shifter for HDMI */
+ #define TPS62361_GPIO   7 /* VCORE1 power control */
+ 
+-/* wl127x BT, FM, GPS connectivity chip */
+-static int wl1271_gpios[] = {46, -1, -1};
+-static struct platform_device wl1271_device = {
+-	.name	= "kim",
+-	.id	= -1,
+-	.dev	= {
+-		.platform_data	= &wl1271_gpios,
+-	},
++/* TODO: handle suspend/resume here.
++ * Upon every suspend, make sure the wilink chip is
++ * capable enough to wake-up the OMAP host.
++ */
++static int plat_wlink_kim_suspend(struct platform_device *pdev, pm_message_t
++		state)
++{
++	return 0;
++}
++
++static int plat_wlink_kim_resume(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static bool uart_req;
++//static struct wake_lock st_wk_lock;
++/* Call the uart disable of serial driver */
++static int plat_uart_disable(void)
++{
++	int port_id = 0;
++	int err = 0;
++	if (uart_req) {
++		sscanf(WILINK_UART_DEV_NAME, "/dev/ttyO%d", &port_id);
++		err = omap_serial_ext_uart_disable(port_id);
++		if (!err)
++			uart_req = false;
++	}
++//	wake_unlock(&st_wk_lock);
++	return err;
++}
++
++/* Call the uart enable of serial driver */
++static int plat_uart_enable(void)
++{
++	int port_id = 0;
++	int err = 0;
++	if (!uart_req) {
++		sscanf(WILINK_UART_DEV_NAME, "/dev/ttyO%d", &port_id);
++		err = omap_serial_ext_uart_enable(port_id);
++		if (!err)
++			uart_req = true;
++	}
++//	wake_lock(&st_wk_lock);
++	return err;
++}
++
++/* wl128x BT, FM, GPS connectivity chip */
++static struct ti_st_plat_data wilink_pdata = {
++	.nshutdown_gpio = 46,
++	.dev_name = WILINK_UART_DEV_NAME,
++	.flow_cntrl = 1,
++	.baud_rate = 3686400,
++	.suspend = plat_wlink_kim_suspend,
++	.resume = plat_wlink_kim_resume,
++	.chip_asleep = plat_uart_disable,
++	.chip_awake  = plat_uart_enable,
++	.chip_enable = plat_uart_enable,
++	.chip_disable = plat_uart_disable,
+ };
+ 
++static struct platform_device wl128x_device = {
++	.name		= "kim",
++	.id		= -1,
++	.dev.platform_data = &wilink_pdata,
++};
++
++static struct platform_device btwilink_device = {
++	.name = "btwilink",
++	.id = -1,
++ };
++
+ static struct gpio_led gpio_leds[] = {
+ 	{
+ 		.name			= "pandaboard::status1",
+@@ -112,7 +179,8 @@ static struct platform_device leds_gpio = {
+ 
+ static struct platform_device *panda_devices[] __initdata = {
+ 	&leds_gpio,
+-	&wl1271_device,
++	&wl128x_device,
++	&btwilink_device,
+ };
+ 
+ static void __init omap4_panda_init_early(void)
+@@ -431,6 +499,8 @@ static struct twl4030_codec_audio_data twl6040_audio = {
+ 	.hs_right_step	= 0x0f,
+ 	.hf_left_step	= 0x1d,
+ 	.hf_right_step	= 0x1d,
++	.hs_switch_dev  = 0x1,
++	.hs_forced_hs_state = 0x1
+ };
+ 
+ static struct twl4030_codec_data twl6040_codec = {
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 6cbced5..64b616a 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -794,23 +794,28 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 
+ 		static struct regulator_consumer_supply usb3v3;
+ 		int regulator;
++
+ 		if (twl_has_regulator()) {
++			/* this is a template that gets copied */
++			struct regulator_init_data usb_fixed = {
++				.constraints.valid_modes_mask =
++					REGULATOR_MODE_NORMAL
++					| REGULATOR_MODE_STANDBY,
++				.constraints.valid_ops_mask =
++					REGULATOR_CHANGE_MODE
++					| REGULATOR_CHANGE_STATUS,
++			};
++
+ 			if (features & TWL6032_SUBCLASS) {
+ 				usb3v3.supply =	"ldousb";
+ 				regulator = TWL6032_REG_LDOUSB;
+-				child = add_regulator_linked(regulator,
+-							     pdata->ldousb,
+-							     &usb3v3, 1,
+-							     features);
+ 			} else {
+ 				usb3v3.supply = "vusb";
+ 				regulator = TWL6030_REG_VUSB;
+-				child = add_regulator_linked(regulator,
+-							     pdata->vusb,
+-							     &usb3v3, 1,
+-							     features);
+ 			}
+-
++			child = add_regulator_linked(regulator, &usb_fixed,
++							&usb3v3, 1,
++							features);
+ 			if (IS_ERR(child))
+ 				return PTR_ERR(child);
+ 		}
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 3c08b06..e233650 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -773,6 +773,8 @@ struct twl4030_codec_audio_data {
+ 	unsigned int check_defaults:1;
+ 	unsigned int reset_registers:1;
+ 	unsigned int hs_extmute:1;
++	unsigned int hs_switch_dev;
++	unsigned int hs_forced_hs_state;
+ 	u16 hs_left_step;
+ 	u16 hs_right_step;
+ 	u16 hf_left_step;
+diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
+index 3f95ea2..c86918d 100644
+--- a/sound/soc/codecs/twl6040.c
++++ b/sound/soc/codecs/twl6040.c
+@@ -89,6 +89,8 @@ struct twl6040_data {
+ 	int pll;
+ 	int power_mode_forced;
+ 	int headset_mode;
++	int hs_switch_dev;
++	int hs_forced_hs_state;
+ 	unsigned int clk_in;
+ 	unsigned int sysclk;
+ 	struct regulator *vddhf_reg;
+@@ -956,18 +958,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
+ 	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
+ 	int status, state = 0;
+ 
+-	mutex_lock(&priv->mutex);
+-
+-	/* Sync status */
+-	status = twl6040_read_reg_volatile(codec, TWL6040_REG_STATUS);
+-	if (status & TWL6040_PLUGCOMP)
+-		state = report;
+-
+-	mutex_unlock(&priv->mutex);
++	if (priv->hs_forced_hs_state) {
++		dev_dbg(codec->dev, "Forcing HS state to %i\n",
++			priv->hs_forced_hs_state);
++		state = priv->hs_forced_hs_state;
++	} else {
++		mutex_lock(&priv->mutex);
++		/* Sync status */
++		status = twl6040_read_reg_volatile(codec, TWL6040_REG_STATUS);
++		if (status & TWL6040_PLUGCOMP)
++			state = report;
++
++		mutex_unlock(&priv->mutex);
++		if (priv->hs_switch_dev && &priv->hs_jack.sdev)
++			switch_set_state(&priv->hs_jack.sdev, !!state);
++	}
+ 
+ 	snd_soc_jack_report(jack, state, report);
+-	if (&priv->hs_jack.sdev)
+-		switch_set_state(&priv->hs_jack.sdev, !!state);
+ }
+ 
+ void twl6040_hs_jack_detect(struct snd_soc_codec *codec,
+@@ -1770,20 +1777,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ 	codec->control_data = dev_get_drvdata(codec->dev->parent);
+ 	codec->dapm.idle_bias_off = 1;
+ 
+-	if (pdata && pdata->hs_left_step && pdata->hs_right_step) {
+-		priv->hs_left_step = pdata->hs_left_step;
+-		priv->hs_right_step = pdata->hs_right_step;
+-	} else {
+-		priv->hs_left_step = 1;
+-		priv->hs_right_step = 1;
+-	}
++	if (pdata) {
++		if (pdata->hs_left_step && pdata->hs_right_step) {
++			priv->hs_left_step = pdata->hs_left_step;
++			priv->hs_right_step = pdata->hs_right_step;
++		} else {
++			priv->hs_left_step = 1;
++			priv->hs_right_step = 1;
++		}
+ 
+-	if (pdata && pdata->hf_left_step && pdata->hf_right_step) {
+-		priv->hf_left_step = pdata->hf_left_step;
+-		priv->hf_right_step = pdata->hf_right_step;
+-	} else {
+-		priv->hf_left_step = 1;
+-		priv->hf_right_step = 1;
++		if (pdata->hf_left_step && pdata->hf_right_step) {
++			priv->hf_left_step = pdata->hf_left_step;
++			priv->hf_right_step = pdata->hf_right_step;
++		} else {
++			priv->hf_left_step = 1;
++			priv->hf_right_step = 1;
++		}
++
++		if (pdata->hs_switch_dev)
++			priv->hs_switch_dev = pdata->hs_switch_dev;
++
++		if (pdata->hs_forced_hs_state)
++			priv->hs_forced_hs_state = pdata->hs_forced_hs_state;
+ 	}
+ 
+ 	if (pdata && pdata->ep_step)
+@@ -1849,12 +1864,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ 
+ 	/* use switch-class based headset reporting if platform requires it */
+ 	jack = &priv->hs_jack;
++	if (priv->hs_switch_dev) {
+ 		jack->sdev.name = "h2w";
+ 		ret = switch_dev_register(&jack->sdev);
+ 		if (ret) {
+ 			dev_err(codec->dev, "error registering switch device %d\n", ret);
+ 			goto reg_err;
+ 		}
++	}
+ 
+ 	wake_lock_init(&priv->wake_lock, WAKE_LOCK_SUSPEND, "twl6040");
+ 
+@@ -1884,7 +1901,8 @@ bias_err:
+ 	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
+ irq_err:
+ 	wake_lock_destroy(&priv->wake_lock);
+-	switch_dev_unregister(&jack->sdev);
++	if (priv->hs_switch_dev)
++		switch_dev_unregister(&jack->sdev);
+ 	destroy_workqueue(priv->ep_workqueue);
+ epwork_err:
+ reg_err:
+@@ -1910,7 +1928,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
+ 	if (priv->vddhf_reg)
+ 		regulator_put(priv->vddhf_reg);
+ 	wake_lock_destroy(&priv->wake_lock);
+-	switch_dev_unregister(&jack->sdev);
++	if (priv->hs_switch_dev)
++		switch_dev_unregister(&jack->sdev);
+ 	destroy_workqueue(priv->workqueue);
+ 	destroy_workqueue(priv->hf_workqueue);
+ 	destroy_workqueue(priv->hs_workqueue);
