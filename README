@@ -9,10 +9,6 @@ cp device/ti/richi-panda/panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.p
 cd kernel/
 git apply panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch
 cd ..
-cp device/ti/richi-panda/panda_omapzoom_audio_hal_for_ics.patch device/ti/common-open/
-cd device/ti/common-open/
-git apply panda_omapzoom_audio_hal_for_ics.patch
-cd ../../..
 
 
 

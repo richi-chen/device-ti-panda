@@ -18,10 +18,6 @@
 PRODUCT_PACKAGES += \
     libtimemmgr
 
-#HWC Hal
-PRODUCT_PACKAGES += \
-    hwcomposer.omap4
-
 #Lib Skia test
 PRODUCT_PACKAGES += \
     SkLibTiJpeg_Test
@@ -95,7 +91,7 @@ PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
 PRODUCT_PACKAGES += \
-	audio.primary.omap4 \
+	audio.primary.panda \
 	audio.a2dp.default \
 	libaudioutils
 

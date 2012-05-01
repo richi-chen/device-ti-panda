@@ -16,11 +16,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-ifneq (,$(findstring panda, $(TARGET_PRODUCT)))
-    LOCAL_MODULE := audio.primary.omap4
-else
-    LOCAL_MODULE := audio.primary.generic_aosp
-endif
+LOCAL_MODULE := audio.primary.panda
 
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_SRC_FILES := audio_hw.c
