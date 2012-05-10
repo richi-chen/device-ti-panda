@@ -30,7 +30,9 @@ PRODUCT_PACKAGES += \
 
 # VTC test
 PRODUCT_PACKAGES += \
-    VTCTestApp
+    VTCTestApp \
+    VTCLoopbackTest \
+    CameraHardwareInterfaceTest
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 $(call inherit-product-if-exists, device/ti/richi-panda/kernel.mk)

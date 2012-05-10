@@ -20,5 +20,6 @@
 ifeq (full_richi_panda,$(TARGET_PRODUCT))
 DUCATI_TGZ := device/ti/richi-panda/proprietary-open/ducati/ducati_full_richi_panda.tgz
 #DUCATI_TGZ := device/ti/proprietary-open/omap4/ducati_blaze_tablet.tgz
-PRODUCT_PACKAGES += ducati-m3.bin
+PRODUCT_PACKAGES += ducati-m3.bin \
+			tesla-dsp.bin
 endif
