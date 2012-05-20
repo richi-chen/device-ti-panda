@@ -32,7 +32,7 @@ device/ti/richi-panda/usbboot device/ti/richi-panda/bootloader.bin
 # Once in fastboot, insert and initialize an SD card (4GB or greater):
 fastboot oem format
 fastboot flash xloader device/ti/richi-panda/xloader.bin
-fastboot flash bootloader device/ti/richi-panda/bootloader.bin
+fastboot flash bootloader device/ti/richi-panda/u-boot.bin
 
 # Build and flash, part 1: Do a build
 source build/envsetup.sh
