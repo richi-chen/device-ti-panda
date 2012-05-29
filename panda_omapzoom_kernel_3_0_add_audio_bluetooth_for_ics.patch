@@ -1,5 +1,5 @@
 diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index d49150d..b47a3ff 100644
+index b542676..04f6952 100644
 --- a/arch/arm/mach-omap2/board-omap4panda.c
 +++ b/arch/arm/mach-omap2/board-omap4panda.c
 @@ -31,6 +31,9 @@
@@ -127,11 +127,31 @@ index d49150d..b47a3ff 100644
  };
  
  static struct twl4030_codec_data twl6040_codec = {
+diff --git a/arch/arm/mach-omap2/remoteproc.c b/arch/arm/mach-omap2/remoteproc.c
+index 0b7197f..f0d0eb0 100644
+--- a/arch/arm/mach-omap2/remoteproc.c
++++ b/arch/arm/mach-omap2/remoteproc.c
+@@ -125,6 +125,7 @@ static struct omap_rproc_pdata omap4_rproc_data[] = {
+ 		.timers_cnt	= ARRAY_SIZE(dsp_timers),
+ 		.idle_addr	= OMAP4430_CM_DSP_DSP_CLKCTRL,
+ 		.idle_mask	= OMAP4430_STBYST_MASK,
++		.suspend_addr   = 0xad6e134c,
+ 		.suspend_mask	= ~0,
+ 		.sus_timeout	= 5000,
+ 		.sus_mbox_name	= "mailbox-2",
+@@ -142,6 +143,7 @@ static struct omap_rproc_pdata omap4_rproc_data[] = {
+ 		.timers_cnt	= ARRAY_SIZE(ipu_timers),
+ 		.idle_addr	= OMAP4430_CM_M3_M3_CLKCTRL,
+ 		.idle_mask	= OMAP4430_STBYST_MASK,
++		.suspend_addr	= 0xb3bf02d8,
+ 		.suspend_mask	= ~0,
+ 		.sus_timeout	= 5000,
+ 		.sus_mbox_name	= "mailbox-1",
 diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 6cbced5..64b616a 100644
+index 6c9ab38..1b10df9 100644
 --- a/drivers/mfd/twl-core.c
 +++ b/drivers/mfd/twl-core.c
-@@ -794,23 +794,28 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+@@ -807,23 +807,28 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
  
  		static struct regulator_consumer_supply usb3v3;
  		int regulator;
@@ -169,6 +189,269 @@ index 6cbced5..64b616a 100644
  			if (IS_ERR(child))
  				return PTR_ERR(child);
  		}
+diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
+index 4d66af2..b5a4819 100644
+--- a/drivers/remoteproc/omap_remoteproc.c
++++ b/drivers/remoteproc/omap_remoteproc.c
+@@ -41,13 +41,13 @@ struct omap_rproc_priv {
+ 	struct iommu *iommu;
+ 	int (*iommu_cb)(struct rproc *, u64, u32);
+ 	int (*wdt_cb)(struct rproc *);
+-	u64 bootaddr;
+ #ifdef CONFIG_REMOTE_PROC_AUTOSUSPEND
+ 	struct omap_mbox *mbox;
+ 	void __iomem *idle;
+ 	u32 idle_mask;
+ 	void __iomem *suspend;
+ 	u32 suspend_mask;
++	u64 bootaddr;
+ #endif
+ };
+ 
+@@ -70,7 +70,7 @@ static int _suspend(struct omap_rproc_priv *rpp)
+ 		schedule();
+ 	}
+ 
+-	return -EAGAIN;
++	return -EIO;
+ }
+ 
+ static int omap_suspend(struct rproc *rproc, bool force)
+@@ -420,19 +420,6 @@ static irqreturn_t omap_rproc_watchdog_isr(int irq, void *p)
+ }
+ #endif
+ 
+-static int omap_rproc_pm_init(struct rproc *rproc, u64 susp_addr)
+-{
+-	struct omap_rproc_pdata *pdata = rproc->dev->platform_data;
+-	phys_addr_t pa;
+-	int ret;
+-
+-	ret = rproc_da_to_pa(rproc, susp_addr, &pa);
+-	if (!ret)
+-		pdata->suspend_addr = (u32)pa;
+-
+-	return ret;
+-}
+-
+ static inline int omap_rproc_start(struct rproc *rproc, u64 bootaddr)
+ {
+ 	struct device *dev = rproc->dev;
+@@ -587,7 +574,6 @@ static struct rproc_ops omap_rproc_ops = {
+ 	.watchdog_exit = omap_rproc_watchdog_exit,
+ #endif
+ 	.dump_registers = omap_rproc_dump_registers,
+-	.pm_init = omap_rproc_pm_init,
+ };
+ 
+ static int omap_rproc_probe(struct platform_device *pdev)
+diff --git a/drivers/remoteproc/remoteproc.c b/drivers/remoteproc/remoteproc.c
+index eea7091..e460350 100644
+--- a/drivers/remoteproc/remoteproc.c
++++ b/drivers/remoteproc/remoteproc.c
+@@ -547,8 +547,8 @@ static struct rproc *__find_rproc_by_name(const char *name)
+ }
+ 
+ /**
+- * rproc_da_to_pa - convert a device (virtual) address to its physical address
+- * @rproc: the remote processor handle
++ * __rproc_da_to_pa - convert a device (virtual) address to its physical address
++ * @maps: the remote processor's memory mappings array
+  * @da: a device address (as seen by the remote processor)
+  * @pa: pointer to the physical address result
+  *
+@@ -559,32 +559,26 @@ static struct rproc *__find_rproc_by_name(const char *name)
+  * On success 0 is returned, and the @pa is updated with the result.
+  * Otherwise, -EINVAL is returned.
+  */
+-int rproc_da_to_pa(struct rproc *rproc, u64 da, phys_addr_t *pa)
++static int
++rproc_da_to_pa(const struct rproc_mem_entry *maps, u64 da, phys_addr_t *pa)
+ {
+-	int i, ret = -EINVAL;
+-	struct rproc_mem_entry *maps = NULL;
+-
+-	if (!rproc || !pa)
+-		return -EINVAL;
++	int i;
++	u64 offset;
+ 
+-	if (mutex_lock_interruptible(&rproc->lock))
+-		return -EINTR;
++	for (i = 0; maps[i].size; i++) {
++		const struct rproc_mem_entry *me = &maps[i];
+ 
+-	maps = rproc->memory_maps;
+-	for (i = 0; maps->size; maps++) {
+-		if (da >= maps->da && da < (maps->da + maps->size)) {
++		if (da >= me->da && da < (me->da + me->size)) {
++			offset = da - me->da;
+ 			pr_debug("%s: matched mem entry no. %d\n",
+ 				__func__, i);
+-			*pa = maps->pa + (da - maps->da);
+-			ret = 0;
+-			break;
++			*pa = me->pa + offset;
++			return 0;
+ 		}
+ 	}
+ 
+-	mutex_unlock(&rproc->lock);
+-	return ret;
++	return -EINVAL;
+ }
+-EXPORT_SYMBOL(rproc_da_to_pa);
+ 
+ static int rproc_mmu_fault_isr(struct rproc *rproc, u64 da, u32 flags)
+ {
+@@ -822,7 +816,6 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 	u64 trace_da1 = 0;
+ 	u64 cdump_da0 = 0;
+ 	u64 cdump_da1 = 0;
+-	u64 susp_addr = 0;
+ 	int ret = 0;
+ 
+ 	while (len >= sizeof(*rsc) && !ret) {
+@@ -873,9 +866,6 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 		case RSC_BOOTADDR:
+ 			*bootaddr = da;
+ 			break;
+-		case RSC_SUSPENDADDR:
+-			susp_addr = da;
+-			break;
+ 		case RSC_DEVMEM:
+ 			ret = rproc_add_mem_entry(rproc, rsc);
+ 			if (ret) {
+@@ -937,7 +927,7 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 	 * __iomem to make sparse happy
+ 	 */
+ 	if (trace_da0) {
+-		ret = rproc_da_to_pa(rproc, trace_da0, &pa);
++		ret = rproc_da_to_pa(rproc->memory_maps, trace_da0, &pa);
+ 		if (ret)
+ 			goto error;
+ 		rproc->trace_buf0 = (__force void *)
+@@ -961,7 +951,7 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 		}
+ 	}
+ 	if (trace_da1) {
+-		ret = rproc_da_to_pa(rproc, trace_da1, &pa);
++		ret = rproc_da_to_pa(rproc->memory_maps, trace_da1, &pa);
+ 		if (ret)
+ 			goto error;
+ 		rproc->trace_buf1 = (__force void *)
+@@ -992,7 +982,7 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 	 * make sparse happy
+ 	 */
+ 	if (cdump_da0) {
+-		ret = rproc_da_to_pa(rproc, cdump_da0, &pa);
++		ret = rproc_da_to_pa(rproc->memory_maps, cdump_da0, &pa);
+ 		if (ret)
+ 			goto error;
+ 		rproc->cdump_buf0 = (__force void *)
+@@ -1006,7 +996,7 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 		}
+ 	}
+ 	if (cdump_da1) {
+-		ret = rproc_da_to_pa(rproc, cdump_da1, &pa);
++		ret = rproc_da_to_pa(rproc->memory_maps, cdump_da1, &pa);
+ 		if (ret)
+ 			goto error;
+ 		rproc->cdump_buf1 = (__force void *)
+@@ -1019,9 +1009,6 @@ static int rproc_handle_resources(struct rproc *rproc, struct fw_resource *rsc,
+ 			goto error;
+ 		}
+ 	}
+-	/* post-process pm data types */
+-	if (susp_addr)
+-		ret = rproc->ops->pm_init(rproc, susp_addr);
+ 
+ error:
+ 	if (ret && rproc->dbg_dir) {
+@@ -1076,7 +1063,7 @@ static int rproc_process_fw(struct rproc *rproc, struct fw_section *section,
+ 		}
+ 
+ 		if (section->type <= FW_DATA) {
+-			ret = rproc_da_to_pa(rproc, da, &pa);
++			ret = rproc_da_to_pa(rproc->memory_maps, da, &pa);
+ 			if (ret) {
+ 				dev_err(dev, "rproc_da_to_pa failed:%d\n", ret);
+ 				break;
+diff --git a/drivers/rpmsg/Kconfig b/drivers/rpmsg/Kconfig
+index 4625ed6..e40c9d8 100644
+--- a/drivers/rpmsg/Kconfig
++++ b/drivers/rpmsg/Kconfig
+@@ -19,7 +19,6 @@ config RPMSG_OMX
+ 	tristate "rpmsg OMX driver"
+ 	default y
+ 	depends on RPMSG
+-	depends on REMOTE_PROC
+ 	depends on TI_TILER
+ 	---help---
+ 	  An rpmsg driver that exposes OMX API to user space, in order to
+diff --git a/drivers/rpmsg/rpmsg_omx.c b/drivers/rpmsg/rpmsg_omx.c
+index ff487ec..9fc5694 100644
+--- a/drivers/rpmsg/rpmsg_omx.c
++++ b/drivers/rpmsg/rpmsg_omx.c
+@@ -280,7 +280,7 @@ static void rpmsg_omx_cb(struct rpmsg_channel *rpdev, void *data, int len,
+ 			break;
+ 		}
+ 		rsp = (struct omx_conn_rsp *) hdr->data;
+-		dev_dbg(&rpdev->dev, "conn rsp: status %d addr %d\n",
++		dev_info(&rpdev->dev, "conn rsp: status %d addr %d\n",
+ 			       rsp->status, rsp->addr);
+ 		omx->dst = rsp->addr;
+ 		if (rsp->status)
+@@ -478,7 +478,7 @@ static int rpmsg_omx_open(struct inode *inode, struct file *filp)
+ 	list_add(&omx->next, &omxserv->list);
+ 	mutex_unlock(&omxserv->lock);
+ 
+-	dev_dbg(omxserv->dev, "local addr assigned: 0x%x\n", omx->ept->addr);
++	dev_info(omxserv->dev, "local addr assigned: 0x%x\n", omx->ept->addr);
+ 
+ 	return 0;
+ }
+@@ -507,7 +507,7 @@ static int rpmsg_omx_release(struct inode *inode, struct file *filp)
+ 	disc_req->addr = omx->dst;
+ 	use = sizeof(*hdr) + hdr->len;
+ 
+-	dev_dbg(omxserv->dev, "Disconnecting from OMX service at %d\n",
++	dev_info(omxserv->dev, "Disconnecting from OMX service at %d\n",
+ 		omx->dst);
+ 
+ 	/* send the msg to the remote OMX connection service */
+@@ -623,8 +623,10 @@ static ssize_t rpmsg_omx_write(struct file *filp, const char __user *ubuf,
+ 	hdr->flags = 0;
+ 	hdr->len = use;
+ 
++	use += sizeof(*hdr);
++
+ 	ret = rpmsg_send_offchannel(omxserv->rpdev, omx->ept->addr,
+-					omx->dst, kbuf, use + sizeof(*hdr));
++						omx->dst, kbuf, use);
+ 	if (ret) {
+ 		dev_err(omxserv->dev, "rpmsg_send failed: %d\n", ret);
+ 		return ret;
+@@ -729,7 +731,7 @@ static int rpmsg_omx_probe(struct rpmsg_channel *rpdev)
+ 
+ 	omxserv->dev = device_create(rpmsg_omx_class, &rpdev->dev,
+ 			MKDEV(major, minor), NULL,
+-			rpdev->id.name);
++			"rpmsg-omx%d", minor);
+ 	if (IS_ERR(omxserv->dev)) {
+ 		ret = PTR_ERR(omxserv->dev);
+ 		dev_err(&rpdev->dev, "device_create failed: %d\n", ret);
+@@ -805,9 +807,7 @@ static void rpmsg_omx_driver_cb(struct rpmsg_channel *rpdev, void *data,
+ }
+ 
+ static struct rpmsg_device_id rpmsg_omx_id_table[] = {
+-	{ .name	= "rpmsg-omx0" }, /* ipu_c0 */
+-	{ .name	= "rpmsg-omx1" }, /* ipu_c1 */
+-	{ .name	= "rpmsg-omx2" }, /* dsp */
++	{ .name	= "rpmsg-omx" },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, rpmsg_omx_id_table);
 diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
 index 3c08b06..e233650 100644
 --- a/include/linux/i2c/twl.h
@@ -182,8 +465,38 @@ index 3c08b06..e233650 100644
  	u16 hs_left_step;
  	u16 hs_right_step;
  	u16 hf_left_step;
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index f872fc7..bd47737 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -103,8 +103,7 @@ enum fw_resource_type {
+ 	RSC_TRACE	= 4,
+ 	RSC_BOOTADDR	= 5,
+ 	RSC_CRASHDUMP	= 6,
+-	RSC_SUSPENDADDR	= 7,
+-	RSC_END		= 8,
++	RSC_END		= 7,
+ };
+ 
+ /**
+@@ -161,7 +160,6 @@ struct rproc_ops {
+ 	int (*watchdog_init)(struct rproc *, int (*)(struct rproc *));
+ 	int (*watchdog_exit)(struct rproc *);
+ 	void (*dump_registers)(struct rproc *);
+-	int (*pm_init)(struct rproc *rproc, u64 suspaddr);
+ };
+ 
+ /*
+@@ -302,7 +300,6 @@ int rproc_register(struct device *, const char *, const struct rproc_ops *,
+ 		unsigned int timeout);
+ int rproc_unregister(const char *);
+ void rproc_last_busy(struct rproc *);
+-int rproc_da_to_pa(struct rproc *, u64, phys_addr_t *);
+ int rproc_pa_to_da(struct rproc *, phys_addr_t, u64 *);
+ #ifdef CONFIG_REMOTE_PROC_AUTOSUSPEND
+ extern const struct dev_pm_ops rproc_gen_pm_ops;
 diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 3f95ea2..c86918d 100644
+index ef54a46..6f2006d 100644
 --- a/sound/soc/codecs/twl6040.c
 +++ b/sound/soc/codecs/twl6040.c
 @@ -89,6 +89,8 @@ struct twl6040_data {
@@ -195,7 +508,7 @@ index 3f95ea2..c86918d 100644
  	unsigned int clk_in;
  	unsigned int sysclk;
  	struct regulator *vddhf_reg;
-@@ -956,18 +958,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
+@@ -933,18 +935,23 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
  	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
  	int status, state = 0;
  
@@ -229,7 +542,7 @@ index 3f95ea2..c86918d 100644
  }
  
  void twl6040_hs_jack_detect(struct snd_soc_codec *codec,
-@@ -1770,20 +1777,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1749,20 +1756,28 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  	codec->control_data = dev_get_drvdata(codec->dev->parent);
  	codec->dapm.idle_bias_off = 1;
  
@@ -271,7 +584,7 @@ index 3f95ea2..c86918d 100644
  	}
  
  	if (pdata && pdata->ep_step)
-@@ -1849,12 +1864,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+@@ -1828,12 +1843,14 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  
  	/* use switch-class based headset reporting if platform requires it */
  	jack = &priv->hs_jack;
@@ -286,7 +599,7 @@ index 3f95ea2..c86918d 100644
  
  	wake_lock_init(&priv->wake_lock, WAKE_LOCK_SUSPEND, "twl6040");
  
-@@ -1884,7 +1901,8 @@ bias_err:
+@@ -1863,7 +1880,8 @@ bias_err:
  	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
  irq_err:
  	wake_lock_destroy(&priv->wake_lock);
@@ -296,7 +609,7 @@ index 3f95ea2..c86918d 100644
  	destroy_workqueue(priv->ep_workqueue);
  epwork_err:
  reg_err:
-@@ -1910,7 +1928,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
+@@ -1889,7 +1907,8 @@ static int twl6040_remove(struct snd_soc_codec *codec)
  	if (priv->vddhf_reg)
  		regulator_put(priv->vddhf_reg);
  	wake_lock_destroy(&priv->wake_lock);
