@@ -19,3 +19,5 @@ ro.config.nocheckin yes
 omap.audio.mic.main=DMic0L
 omap.audio.mic.sub=DMic0R
 omap.audio.power=PingPong
+#define a property for hdmi sink channel count
+dolby.audio.hdmi.channels=0

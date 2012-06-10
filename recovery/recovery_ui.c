@@ -43,7 +43,7 @@ int device_recovery_start() {
     // recovery for up to 5 seconds waiting for the userdata partition
     // block device to exist.
 
-    const char* fn = "/dev/block/platform/mmci-omap-hs.1/by-name/userdata";
+    const char* fn = "/dev/block/platform/mmci-omap-hs.0/by-name/userdata";
 
     int tries = 0;
     int ret;

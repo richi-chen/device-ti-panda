@@ -26,7 +26,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     CameraOMAP4 \
     Camera \
-    camera_test
+    camera_test \
+    libcpcam_jni \
+    com.ti.omap.android.cpcam
+
+PRODUCT_COPY_FILES += \
+	hardware/ti/omap4xxx/cpcam/com.ti.omap.android.cpcam.xml:system/etc/permissions/com.ti.omap.android.cpcam.xml
 
 # VTC test
 PRODUCT_PACKAGES += \
@@ -41,7 +46,8 @@ else
 LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
 endif
 
-PRODUCT_COPY_FILES := \
+#Need to revisit the fastboot copy files
+PRODUCT_COPY_FILES += \
 	$(LOCAL_KERNEL):kernel \
 	device/ti/richi-panda/init.omap4pandaboard.rc:root/init.omap4pandaboard.rc \
 	device/ti/richi-panda/init.omap4pandaboard.usb.rc:root/init.omap4pandaboard.usb.rc \
@@ -80,11 +86,11 @@ DEVICE_PACKAGE_OVERLAYS := \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.opengles.version=131072
 
-#PRODUCT_PROPERTY_OVERRIDES += \
-#	ro.sf.lcd_density=160
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.sf.lcd_density=160
 
-#PRODUCT_PROPERTY_OVERRIDES += \
-#	persist.hwc.mirroring.region=0:0:1920:1080
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.hwc.mirroring.region=0:0:1280:720
 
 PRODUCT_TAGS += dalvik.gc.type-precise
 
@@ -135,6 +141,11 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
 	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
+# BlueZ test tools
+PRODUCT_PACKAGES += \
+	hciconfig \
+	hcitool
+
 # SMC components for secure services like crypto, secure storage
 PRODUCT_PACKAGES += \
         smc_pa.ift \
@@ -171,7 +182,7 @@ $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
 $(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vendor.mk)
 #$(call inherit-product-if-exists, vendor/ti/panda/device-vendor.mk)
 $(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.mk)
-$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
+#$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
 $(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
 #$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
 $(call inherit-product-if-exists, device/ti/richi-panda/proprietary-open/ducati-full_richi_panda.mk)

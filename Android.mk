@@ -20,11 +20,16 @@
 # to only building on ARM if they include assembly. Individual makefiles
 # are responsible for having their own logic, for fine-grained control.
 
-ifeq (richi-panda,$(TARGET_DEVICE))
 LOCAL_PATH := $(call my-dir)
 
+# protect makefile from other boards
 # if some modules are built directly from this directory (not subdirectories),
 # their rules should be written here.
+ifeq (richi-panda,$(TARGET_DEVICE))
+include $(CLEAR_VARS)
 
+ifneq ($(TARGET_SIMULATOR),true)
 include $(call all-makefiles-under,$(LOCAL_PATH))
+endif
+
 endif
