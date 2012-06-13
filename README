@@ -5,9 +5,8 @@ repo init -u git://github.com/richi-chen/Pandaboard-ICS-repo.git -b omapzoom
 repo sync
 
 Apply patch:
-cp device/ti/richi-panda/panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch kernel/
 cd kernel/
-git apply panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch
+git apply ../device/ti/richi-panda/panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch
 cd ..
 cd hardware/ti/omap4xxx/
 git apply ../../../device/ti/richi-panda/panda_hwc_revert.patch
@@ -30,13 +29,13 @@ make fastboot
 # Initial setup, part 2:
 # With no SD card inserted, plug USB first, then the power cord,
 #   and load fastboot over USB:
-device/ti/richi-panda/usbboot device/ti/richi-panda/bootloader.bin
+device/ti/richi-panda/usbboot device/ti/richi-panda/u-boot.bin
 
 # Initial setup, part 3:
 # Once in fastboot, insert and initialize an SD card (4GB or greater):
 fastboot oem format
 fastboot flash xloader device/ti/richi-panda/xloader.bin
-fastboot flash bootloader device/ti/richi-panda/bootloader.bin
+fastboot flash bootloader device/ti/richi-panda/u-boot.bin
 
 # Build and flash, part 1: Do a build
 source build/envsetup.sh
