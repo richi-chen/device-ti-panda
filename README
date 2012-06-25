@@ -7,6 +7,7 @@ repo sync
 Apply patch:
 cd kernel/
 git apply ../device/ti/richi-panda/panda_omapzoom_kernel_3_0_add_audio_bluetooth_for_ics.patch
+git apply ../device/ti/richi-panda/panda_omapzoom_kernel_3_0_ASOC_ABE_revert.patch
 cd ..
 
 

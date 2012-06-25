@@ -80,11 +80,11 @@ DEVICE_PACKAGE_OVERLAYS := \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.opengles.version=131072
 
-#PRODUCT_PROPERTY_OVERRIDES += \
-#	ro.sf.lcd_density=160
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.sf.lcd_density=160
 
-#PRODUCT_PROPERTY_OVERRIDES += \
-#	persist.hwc.mirroring.region=0:0:1920:1080
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.hwc.mirroring.region=0:0:1280:720
 
 PRODUCT_TAGS += dalvik.gc.type-precise
 
@@ -171,7 +171,7 @@ $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
 $(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ti-omap4-vendor.mk)
 #$(call inherit-product-if-exists, vendor/ti/panda/device-vendor.mk)
 $(call inherit-product, device/ti/richi-panda/proprietary-open/install-binaries.mk)
-$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
+#$(call inherit-product, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)
 $(call inherit-product-if-exists, device/ti/common-open/s3d/s3d-products.mk)
 #$(call inherit-product-if-exists, device/ti/proprietary-open/omap4/ducati-blaze_tablet.mk)
 $(call inherit-product-if-exists, device/ti/richi-panda/proprietary-open/ducati-full_richi_panda.mk)

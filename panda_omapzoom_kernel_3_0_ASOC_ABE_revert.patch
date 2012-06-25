@@ -1,0 +1,2879 @@
+diff --git a/sound/soc/omap/Kconfig b/sound/soc/omap/Kconfig
+index dd98cc4..e2958e4 100644
+--- a/sound/soc/omap/Kconfig
++++ b/sound/soc/omap/Kconfig
+@@ -138,14 +138,6 @@ config SND_OMAP_SOC_OMAP4_HDMI
+ 	  Say Y if you want to add support for SoC HDMI audio on Texas Instruments
+ 	  OMAP4 chips
+ 
+-config SND_OMAP_SOC_ABE_DL2
+-	bool "Use ABE DL2 path"
+-	depends on SND_OMAP_SOC && SND_OMAP_SOC_ABE_DSP
+-	default n
+-	help
+-	  Say Y if you want to enable ABE DL2 path for PDM_DL2, otherwise it will be
+-	  connected to DL1 path.
+-
+ config SND_OMAP4_ABE_USE_ALT_FW
+ 	bool "Use alternate ABE firmware configuration (DMIC support)"
+ 	default n
+diff --git a/sound/soc/omap/abe/abe_aess.c b/sound/soc/omap/abe/abe_aess.c
+index d08d5c2..eb35b58 100644
+--- a/sound/soc/omap/abe/abe_aess.c
++++ b/sound/soc/omap/abe/abe_aess.c
+@@ -73,8 +73,6 @@
+  */
+ void omap_abe_hw_configuration(struct omap_abe *abe)
+ {
+-	/* enable AESS auto gating (required to release all AESS clocks) */
+-	omap_abe_reg_writel(abe, AESS_AUTO_GATING_ENABLE, 1);
+ 	/* enables the DMAreq from AESS AESS_DMAENABLE_SET = 255 */
+ 	omap_abe_reg_writel(abe, AESS_DMAENABLE_SET, DMA_ENABLE_ALL);
+ 	/* enables the MCU IRQ from AESS to Cortex A9 */
+diff --git a/sound/soc/omap/abe/abe_aess.h b/sound/soc/omap/abe/abe_aess.h
+index 8b3b700..70c54f8e 100644
+--- a/sound/soc/omap/abe/abe_aess.h
++++ b/sound/soc/omap/abe/abe_aess.h
+@@ -69,7 +69,6 @@
+ #define EVENT_GENERATOR_START		0x6C
+ #define EVENT_SOURCE_SELECTION		0x70
+ #define AUDIO_ENGINE_SCHEDULER		0x74
+-#define AESS_AUTO_GATING_ENABLE		0x7C
+ 
+ /*
+  * AESS_MCU_IRQSTATUS bit field
+diff --git a/sound/soc/omap/abe/abe_api.h b/sound/soc/omap/abe/abe_api.h
+index f40357b..a24ec96 100644
+--- a/sound/soc/omap/abe/abe_api.h
++++ b/sound/soc/omap/abe/abe_api.h
+@@ -508,14 +508,4 @@ void abe_init_mem(void __iomem **_io_base);
+  */
+ void abe_write_pdmdl_offset(u32 path, u32 offset_left, u32 offset_right);
+ 
+-/**
+- * abe_write_select_pdm_output - Select the path for OPP25 route input
+- *
+- * Parameters:
+- *   path: 1 for output om headset, 2 for output on handsfree, 3 on the 2 output
+- *	 at the same time
+- *
+- */
+-void abe_write_select_pdm_output(u32 path);
+-
+ #endif/* _ABE_API_H_ */
+diff --git a/sound/soc/omap/abe/abe_cm_addr.h b/sound/soc/omap/abe/abe_cm_addr.h
+index b7a42ee..2715002 100644
+--- a/sound/soc/omap/abe/abe_cm_addr.h
++++ b/sound/soc/omap/abe/abe_cm_addr.h
+@@ -219,7 +219,3 @@
+ #define OMAP_ABE_C_SRC_FIR12_LP_GAIN_COEFS_SIZE            0x1E4
+ #define OMAP_ABE_C_SRC_6_HP_NEW_COEFS_ADDR                 0x1D64
+ #define OMAP_ABE_C_SRC_6_HP_NEW_COEFS_SIZE                 0x1C
+-#define OMAP_ABE_C_48_96_LP_NEW_COEFS_ADDR                 0x1D80
+-#define OMAP_ABE_C_48_96_LP_NEW_COEFS_SIZE                 0x4C
+-#define OMAP_ABE_C_96_48_DMIC_COEFS_NO_PRESCALE_ADDR       0x1DCC
+-#define OMAP_ABE_C_96_48_DMIC_COEFS_NO_PRESCALE_SIZE       0x2C
+diff --git a/sound/soc/omap/abe/abe_dbg.h b/sound/soc/omap/abe/abe_dbg.h
+index 46e7a53..8639806 100644
+--- a/sound/soc/omap/abe/abe_dbg.h
++++ b/sound/soc/omap/abe/abe_dbg.h
+@@ -206,7 +206,6 @@ struct omap_abe {
+ 	u32 muted_gains_decibel[MAX_NBGAIN_CMEM];
+ 	u32 desired_gains_linear[MAX_NBGAIN_CMEM];
+ 	u32 desired_ramp_delay_ms[MAX_NBGAIN_CMEM];
+-	u32 mcpdm_path;
+ 	int pp_buf_id;
+ 	int pp_buf_id_next;
+ 	int pp_buf_addr[4];
+diff --git a/sound/soc/omap/abe/abe_dm_addr.h b/sound/soc/omap/abe/abe_dm_addr.h
+index 5ce80dd..ea44290 100644
+--- a/sound/soc/omap/abe/abe_dm_addr.h
++++ b/sound/soc/omap/abe/abe_dm_addr.h
+@@ -199,8 +199,6 @@
+ #define OMAP_ABE_D_BT_DL_48_8_FIR_OPP100_WRAP_SIZE         0x8
+ #define OMAP_ABE_D_VX_UL_48_8_FIR_WRAP_ADDR                0x1464
+ #define OMAP_ABE_D_VX_UL_48_8_FIR_WRAP_SIZE                0x8
+-#define OMAP_ABE_D_DEBUG_DUMP_FIFO_SMEM_ADDR               0x146C
+-#define OMAP_ABE_D_DEBUG_DUMP_FIFO_SMEM_SIZE               0x80
+ #define OMAP_ABE_D_DEBUG_FW_TASK_ADDR                      0x1600
+ #define OMAP_ABE_D_DEBUG_FW_TASK_SIZE                      0x100
+ #define OMAP_ABE_D_DEBUG_FIFO_ADDR                         0x1700
+diff --git a/sound/soc/omap/abe/abe_firmware.c b/sound/soc/omap/abe/abe_firmware.c
+index bf7e1f5..2b218df 100644
+--- a/sound/soc/omap/abe/abe_firmware.c
++++ b/sound/soc/omap/abe/abe_firmware.c
+@@ -1,9 +1,9 @@
+ 0xabeabe00,
+ 0x00000000,
+-0x0000d44c,
++0x0000d2a4,
+ 0x00000d8c,
+ 0x00000001,
+-0x00009560,
++0x00009510,
+ 0x00000006,
+ 0x20314c44,
+ 0x61757145,
+@@ -872,11 +872,11 @@
+ 0x0033fbf6,
+ 0xffdd34fa,
+ 0x000fea26,
+-0x00009560,
++0x00009510,
+ 0x00002000,
+-0x00001df8,
++0x00001d80,
+ 0x00004000,
+-0x00005640,
++0x00005510,
+ 0x1600200f,
+ 0x0a000960,
+ 0x08200000,
+@@ -1040,7 +1040,7 @@
+ 0x1600694e,
+ 0x410000ec,
+ 0x0600000c,
+-0x16014ecd,
++0x160146cd,
+ 0x0a800a60,
+ 0x0a200770,
+ 0x04800299,
+@@ -1095,7 +1095,7 @@
+ 0x04a0020b,
+ 0x004002bc,
+ 0x0600000c,
+-0x16014ecd,
++0x160146cd,
+ 0x0a800de0,
+ 0x0a200770,
+ 0x0a000d80,
+@@ -1187,38 +1187,19 @@
+ 0x9d1e8108,
+ 0x988012a0,
+ 0x08200000,
+-0x9f158048,
+-0x07800000,
+-0x9f040010,
+-0x07800000,
+-0x9f03fc10,
+-0x9f158068,
+-0x9f040060,
+-0x9f03fc60,
+-0x9c0c07b0,
+-0x9f092020,
+-0x9f082030,
+-0x9c0c07b0,
+-0x9f092060,
+-0x9f082070,
+-0x07800000,
+-0x07800000,
+-0x9d088148,
+-0x98801360,
+-0x08200000,
+ 0x9c080048,
+ 0x9f1d0010,
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8118,
+-0x98801490,
++0x98801360,
+ 0x08200000,
+ 0x9c180028,
+ 0x9f1d0010,
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8108,
+-0x98801500,
++0x988013d0,
+ 0x08200000,
+ 0x9c180068,
+ 0x9c180028,
+@@ -1226,7 +1207,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8148,
+-0x98801570,
++0x98801440,
+ 0x08200000,
+ 0x9c1e0048,
+ 0x9c1e0008,
+@@ -1234,25 +1215,14 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8148,
+-0x988015f0,
+-0x08200000,
+-0x9c1e0008,
+-0x9f1d0010,
+-0x07800000,
+-0x07800000,
+-0x9d0c8108,
+-0x98801670,
++0x988014c0,
+ 0x08200000,
+-0x9c080040,
+ 0x9c1e0008,
+ 0x9f1d0010,
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8108,
+-0x07800000,
+-0x07800000,
+-0x9d0c8158,
+-0x988016e0,
++0x98801540,
+ 0x08200000,
+ 0x160004a4,
+ 0x160004b5,
+@@ -1276,19 +1246,16 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8518,
+-0x98801800,
++0x98801620,
+ 0x9d032340,
+ 0x9d032c50,
+ 0x9d033560,
+ 0x08200000,
+ 0x16000504,
+ 0x16000515,
+-0x0a0019c0,
++0x0a0017b0,
+ 0x160000c4,
+ 0x16000505,
+-0x0a0019c0,
+-0x16000504,
+-0x16000505,
+ 0x160003c2,
+ 0x16000526,
+ 0x07800000,
+@@ -1322,7 +1289,7 @@
+ 0x07800000,
+ 0x9d180108,
+ 0x9d180148,
+-0x98801a40,
++0x98801830,
+ 0x9d032440,
+ 0x9d032d50,
+ 0x9d033660,
+@@ -1336,7 +1303,7 @@
+ 0x9d188108,
+ 0x9f158038,
+ 0x07800000,
+-0x98801c80,
++0x98801a70,
+ 0x9d188108,
+ 0x08200000,
+ 0x9e088100,
+@@ -1358,35 +1325,54 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8118,
+-0x98801e00,
++0x98801bf0,
+ 0x08200000,
+ 0x08200000,
+ 0x08200000,
+ 0x08200000,
+-0x160004a4,
+-0x160004b5,
+-0x160004c6,
+-0x160000bd,
+-0x9c032340,
+-0x9c032c50,
+-0x9c033560,
+-0x9c180028,
+-0x9c180068,
+-0x9c1800a8,
+-0x9c1800e8,
++0x9c038600,
+ 0x07800000,
+-0x9d0c8318,
+-0x9d0c84b8,
+-0x9c180028,
+-0x9c180068,
+ 0x07800000,
++0x9c180770,
++0xdc100348,
++0x160fff05,
++0x9f000810,
++0x9f118412,
++0x9f001010,
++0x9f002810,
++0x9c0c00b8,
++0x160ffd80,
++0x9d0c8410,
++0x9f1d8012,
++0x9f001810,
++0x9f0400d0,
++0x9c0c0210,
++0x16000204,
++0xdd0e00b0,
++0x16000005,
++0x9f1d80b2,
++0x9f0000b0,
++0x9f0020b0,
++0x9f0400d0,
++0x05800560,
++0x0a801e10,
++0x9c0c0510,
++0x0a001e20,
++0x9c0c0618,
++0x16000014,
++0x9d0c81e8,
++0x9d0c8148,
++0x0a801e90,
++0x9c0c05b0,
++0x9c0c0510,
++0x0a001eb0,
++0x9c0c06b8,
++0x9c0c0618,
+ 0x07800000,
+-0x9d0c8518,
+-0x98801ed0,
+-0x9d032340,
+-0x9d032c50,
+-0x9d033560,
+-0x08200000,
++0x9d0c81e8,
++0x9d0c8148,
++0x98801c90,
++0x9d180750,
+ 0x08200000,
+ 0x9d019220,
+ 0x048002ff,
+@@ -1394,13 +1380,13 @@
+ 0x413ffefe,
+ 0x16000040,
+ 0x9c010910,
+-0x0a204bb0,
++0x0a204880,
+ 0x14400040,
+ 0x9c030810,
+ 0x16000171,
+ 0x9c009f30,
+ 0x9c019220,
+-0x0a204460,
++0x0a204380,
+ 0x003ffefe,
+ 0x9c009830,
+ 0x048ffeff,
+@@ -1410,7 +1396,7 @@
+ 0x05800370,
+ 0x9e088000,
+ 0x0ba00000,
+-0x0a0021b0,
++0x0a0020d0,
+ 0x40001807,
+ 0x160000bd,
+ 0x05800370,
+@@ -1428,14 +1414,14 @@
+ 0x04a0c076,
+ 0x05800560,
+ 0x16000184,
+-0x4ac02390,
++0x4ac022b0,
+ 0x04a0f077,
+ 0x160003d6,
+ 0x05800570,
+ 0x9d02b060,
+-0x0ac022e0,
++0x0ac02200,
+ 0x01001005,
+-0x0a002320,
++0x0a002240,
+ 0x9c1800a8,
+ 0x9d02b060,
+ 0x07800000,
+@@ -1443,7 +1429,7 @@
+ 0x07800000,
+ 0x9c02b060,
+ 0x9d0c8118,
+-0x988022f0,
++0x98802210,
+ 0x07800000,
+ 0x08200000,
+ 0x01000015,
+@@ -1460,7 +1446,7 @@
+ 0x41001003,
+ 0x14400073,
+ 0x013ffefe,
+-0x0a002510,
++0x0a002430,
+ 0x40001807,
+ 0x160000bd,
+ 0x05800370,
+@@ -1480,11 +1466,11 @@
+ 0x04a0c076,
+ 0x05800560,
+ 0x00000212,
+-0x4ac02a10,
++0x4ac02930,
+ 0x04a0f077,
+ 0x05800570,
+ 0x00000413,
+-0x4ac02620,
++0x4ac02540,
+ 0x04800816,
+ 0x01001005,
+ 0x00001017,
+@@ -1502,7 +1488,7 @@
+ 0x16000184,
+ 0x00000010,
+ 0x9d029020,
+-0x0a002750,
++0x0a002670,
+ 0x9d0c8118,
+ 0x9d029020,
+ 0x9f0608b0,
+@@ -1516,16 +1502,16 @@
+ 0x05800050,
+ 0x9f040070,
+ 0x9f1185b2,
+-0x0ae028a0,
++0x0ae027c0,
+ 0xdd100380,
+ 0x05800350,
+ 0x9e0f0450,
+-0x4ae028d0,
++0x4ae027f0,
+ 0x160000b0,
+ 0x9f0304b0,
+ 0x9d029020,
+ 0x9d100380,
+-0x4a002750,
++0x4a002670,
+ 0x16001bb3,
+ 0x9d100380,
+ 0x9c1800a8,
+@@ -1533,7 +1519,7 @@
+ 0x9f1d8010,
+ 0x9f138612,
+ 0x9f1f8012,
+-0x98802720,
++0x98802640,
+ 0x07800000,
+ 0x9d0c8118,
+ 0x04800814,
+@@ -1573,7 +1559,7 @@
+ 0x9e0f0050,
+ 0x9e0f0450,
+ 0x9e0f0140,
+-0x0a002930,
++0x0a002850,
+ 0x40000024,
+ 0x048002ff,
+ 0x41000224,
+@@ -1582,7 +1568,7 @@
+ 0x04000400,
+ 0x9e0f0150,
+ 0x01000025,
+-0x0a202f00,
++0x0a202e20,
+ 0x403ffefe,
+ 0x16000007,
+ 0x9e0f0170,
+@@ -1598,7 +1584,7 @@
+ 0x04000400,
+ 0x9e0f0150,
+ 0x01000025,
+-0x0a203840,
++0x0a203760,
+ 0x403ffefe,
+ 0x16000007,
+ 0x9e0f0170,
+@@ -1608,7 +1594,7 @@
+ 0x413ffefe,
+ 0x16000005,
+ 0x01000025,
+-0x0a202f00,
++0x0a202e20,
+ 0x40000024,
+ 0x16000005,
+ 0x403ffefe,
+@@ -1621,7 +1607,7 @@
+ 0x16000005,
+ 0x01000025,
+ 0x01800dc5,
+-0x0a203840,
++0x0a203760,
+ 0x40000024,
+ 0x16000005,
+ 0x403ffefe,
+@@ -1646,25 +1632,25 @@
+ 0x9c180674,
+ 0x9c180650,
+ 0x058001a0,
+-0x0aa03400,
++0x0aa03320,
+ 0x04800144,
+ 0x04400044,
+ 0x05800040,
+-0x0aa03140,
++0x0aa03060,
+ 0x05800160,
+-0x0ac030e0,
++0x0ac03000,
+ 0x9e090000,
+ 0x07800000,
+ 0x07800000,
+ 0x9e0d0500,
+ 0x9d040508,
+-0x0a0032d0,
++0x0a0031f0,
+ 0x9d040008,
+ 0x9e090000,
+ 0x07800000,
+ 0x9d040008,
+ 0x9e0d0500,
+-0x0a0032d0,
++0x0a0031f0,
+ 0x9d040008,
+ 0x9e090000,
+ 0x07800000,
+@@ -1673,18 +1659,18 @@
+ 0x1280010a,
+ 0x048001a9,
+ 0x05800940,
+-0x0aa032d0,
++0x0aa031f0,
+ 0x05800160,
+ 0x40000628,
+ 0x160ffff9,
+-0x0ac03260,
++0x0ac03180,
+ 0x05800180,
+-0x0ae032d0,
++0x0ae031f0,
+ 0x160ffff6,
+ 0x160ffff7,
+-0x0a0032a0,
++0x0a0031c0,
+ 0x05800810,
+-0x0ae032d0,
++0x0ae031f0,
+ 0x16000016,
+ 0x16000007,
+ 0x9d044690,
+@@ -1692,10 +1678,10 @@
+ 0x9d180674,
+ 0x05800160,
+ 0x9d180654,
+-0x0ac03340,
++0x0ac03260,
+ 0x0420040a,
+ 0x04a001ab,
+-0x4a003370,
++0x4a003290,
+ 0x044000bb,
+ 0x0480014b,
+ 0x044000bb,
+@@ -1707,24 +1693,24 @@
+ 0x12000288,
+ 0x12000299,
+ 0x9e0e8280,
+-0xca003510,
++0xca003430,
+ 0x1e0e8390,
+ 0xdd040604,
+ 0x05800160,
+-0x0ac034b0,
++0x0ac033d0,
+ 0x9d040008,
+ 0x9e090000,
+ 0x07800000,
+ 0x05800040,
+ 0x9e0d0500,
+-0x0aa03510,
++0x0aa03430,
+ 0x9d040508,
+-0x0a003510,
++0x0a003430,
+ 0x9e090000,
+ 0x05800040,
+ 0x9d040008,
+ 0x9e0d0500,
+-0x0a803510,
++0x0a803430,
+ 0x9d040508,
+ 0x9c1d06c4,
+ 0xdc1d0644,
+@@ -1737,7 +1723,7 @@
+ 0x9d108700,
+ 0x00000cc9,
+ 0x06000008,
+-0x0aa03710,
++0x0aa03630,
+ 0xdc1d0684,
+ 0x14400005,
+ 0xdc1d0604,
+@@ -1748,16 +1734,16 @@
+ 0xdd108700,
+ 0x160ffff8,
+ 0x05800540,
+-0x0aa036d0,
++0x0aa035f0,
+ 0x05800160,
+-0x0ac036c0,
++0x0ac035e0,
+ 0x01000027,
+-0x0a0036d0,
++0x0a0035f0,
+ 0x01000028,
+ 0x9e088000,
+ 0xa0054dba,
+ 0xa005c81a,
+-0x0a0037a0,
++0x0a0036c0,
+ 0x9e088000,
+ 0xa0054dba,
+ 0xa005c81a,
+@@ -1770,7 +1756,7 @@
+ 0x9d0446a0,
+ 0x9e0f0070,
+ 0x9d0c8118,
+-0x98802fa0,
++0x98802ec0,
+ 0x003ffefb,
+ 0x003ffcfa,
+ 0x003ffaf9,
+@@ -1794,26 +1780,26 @@
+ 0x9c180674,
+ 0x9c180650,
+ 0x058001a0,
+-0x4aa03d70,
++0x4aa03c90,
+ 0x160000f7,
+ 0x04800144,
+ 0x04400744,
+ 0x05800740,
+-0x0aa03a90,
++0x0aa039b0,
+ 0x05800160,
+-0x0ac03a30,
++0x0ac03950,
+ 0x9e090000,
+ 0x07800000,
+ 0x07800000,
+ 0x9e0d0500,
+ 0x9d040508,
+-0x0a003c30,
++0x0a003b50,
+ 0x9d040008,
+ 0x9e090000,
+ 0x07800000,
+ 0x9d040008,
+ 0x9e0d0500,
+-0x0a003c30,
++0x0a003b50,
+ 0x9d040008,
+ 0x9e090000,
+ 0x160000f7,
+@@ -1822,19 +1808,19 @@
+ 0x1280017a,
+ 0x048001a9,
+ 0x05800940,
+-0x0aa03c30,
++0x0aa03b50,
+ 0x05800160,
+ 0x00000ec8,
+ 0x40000688,
+ 0x160ffff9,
+-0x0ac03bc0,
++0x0ac03ae0,
+ 0x05800810,
+-0x0ae03c30,
++0x0ae03b50,
+ 0x160ffff6,
+ 0x160ffff7,
+-0x0a003c00,
++0x0a003b20,
+ 0x05800180,
+-0x0ae03c30,
++0x0ae03b50,
+ 0x16000016,
+ 0x16000007,
+ 0x9d044690,
+@@ -1842,11 +1828,11 @@
+ 0x9d180674,
+ 0x05800160,
+ 0x9d180654,
+-0x4ac03cb0,
++0x4ac03bd0,
+ 0x160000f7,
+ 0x0420047a,
+ 0x04a001ab,
+-0x4a003ce0,
++0x4a003c00,
+ 0x044007bb,
+ 0x0480014b,
+ 0x044007bb,
+@@ -1858,27 +1844,27 @@
+ 0x12000288,
+ 0x12000299,
+ 0x9e0e8280,
+-0xca003e80,
++0xca003da0,
+ 0x1e0e8390,
+ 0xdd040604,
+ 0x05800160,
+-0x0ac03e20,
++0x0ac03d40,
+ 0x9d040008,
+ 0x9e090000,
+ 0x07800000,
+ 0x060000f4,
+ 0x9e0d0500,
+-0x0aa03e80,
++0x0aa03da0,
+ 0x9d040508,
+-0x0a003e80,
++0x0a003da0,
+ 0x9e090000,
+ 0x060000f4,
+ 0x9d040008,
+ 0x9e0d0500,
+-0x0a803e80,
++0x0a803da0,
+ 0x9d040508,
+ 0x060000f4,
+-0x0aa04100,
++0x0aa04020,
+ 0x9c1d0600,
+ 0x9f065060,
+ 0x9f020830,
+@@ -1888,16 +1874,16 @@
+ 0x9f065060,
+ 0x9f020c30,
+ 0x0600000a,
+-0x0a804100,
++0x0a804020,
+ 0x9f095010,
+ 0x00800dcb,
+ 0x16000028,
+ 0x0600000a,
+-0x0aa04100,
++0x0aa04020,
+ 0x0600000b,
+-0x0a804070,
++0x0a803f90,
+ 0x0600000d,
+-0x0aa04100,
++0x0aa04020,
+ 0x9d044480,
+ 0x9d044780,
+ 0x9c100480,
+@@ -1907,9 +1893,9 @@
+ 0x9d044680,
+ 0x9d108480,
+ 0x9d108700,
+-0x0a004180,
++0x0a0040a0,
+ 0x058000d0,
+-0x0aa04100,
++0x0aa04020,
+ 0x9d044490,
+ 0x9c100700,
+ 0x9d044790,
+@@ -1931,7 +1917,7 @@
+ 0x07800000,
+ 0x00800cc9,
+ 0x06000008,
+-0x0aa04330,
++0x0aa04250,
+ 0xdc1d0684,
+ 0x160000f5,
+ 0xdc1d0604,
+@@ -1942,16 +1928,16 @@
+ 0xdd108700,
+ 0x160ffff8,
+ 0x05800540,
+-0x0aa042f0,
++0x0aa04210,
+ 0x05800160,
+-0x0ac042e0,
++0x0ac04200,
+ 0x01000027,
+-0x0a0042f0,
++0x0a004210,
+ 0x01000028,
+ 0x9e088000,
+ 0xa0054dba,
+ 0xa005c81a,
+-0x0a0043c0,
++0x0a0042e0,
+ 0x9e088000,
+ 0xa0054dba,
+ 0xa005c81a,
+@@ -1964,7 +1950,7 @@
+ 0x9d0446a0,
+ 0x9e0f0070,
+ 0x9d0c8118,
+-0x988038e0,
++0x98803800,
+ 0x003ffefb,
+ 0x003ffcfa,
+ 0x003ffaf9,
+@@ -1982,7 +1968,7 @@
+ 0x9d0c8318,
+ 0x9d0c81b8,
+ 0x9d0c02b8,
+-0x988044b0,
++0x988043d0,
+ 0x07800000,
+ 0xa00602ba,
+ 0x07800000,
+@@ -2007,7 +1993,7 @@
+ 0x07800000,
+ 0x9d0c8318,
+ 0x9d0c02b8,
+-0x988045e0,
++0x98804500,
+ 0x9c0c0018,
+ 0xa00602ba,
+ 0x07800000,
+@@ -2020,43 +2006,6 @@
+ 0x07800000,
+ 0x9d0c02b8,
+ 0x08200000,
+-0x1440001d,
+-0x16000005,
+-0x9e0e0730,
+-0x9c0c0018,
+-0x07800000,
+-0x9c0c07b0,
+-0x9d0c8318,
+-0x04800155,
+-0xa006021a,
+-0x9f092020,
+-0x9f082030,
+-0x9c0c07b0,
+-0x9f092060,
+-0x9f082070,
+-0x05800520,
+-0x07800000,
+-0x9d0c8218,
+-0x988047a0,
+-0x9c0c0018,
+-0x07800000,
+-0x07800000,
+-0x9d0c8318,
+-0x07800000,
+-0x9c0c07b0,
+-0xa006021a,
+-0x9f092020,
+-0x9f082030,
+-0x9c0c07b0,
+-0x9f092060,
+-0x9f082070,
+-0x07800000,
+-0x07800000,
+-0x9d0c8218,
+-0xdd0c8118,
+-0x1440001d,
+-0x0aa047a0,
+-0x08200000,
+ 0x9c0c0038,
+ 0x1440001d,
+ 0x04a001dd,
+@@ -2069,7 +2018,7 @@
+ 0x9d0c8298,
+ 0x9d0c8338,
+ 0x9d0c8198,
+-0x98804a10,
++0x988046e0,
+ 0x07800000,
+ 0xa00602ba,
+ 0xa006821a,
+@@ -2084,9 +2033,9 @@
+ 0xdd040008,
+ 0x06000001,
+ 0x04a00111,
+-0x0aa04b30,
++0x0aa04800,
+ 0x9d0c8118,
+-0x98804b10,
++0x988047e0,
+ 0x08200000,
+ 0x9c0c02b0,
+ 0x9c0c0018,
+@@ -2096,8 +2045,8 @@
+ 0xdd0c81b8,
+ 0x06000005,
+ 0x04a00155,
+-0x0aa04c00,
+-0x98804bc0,
++0x0aa048d0,
++0x98804890,
+ 0x08200000,
+ 0x9c039e30,
+ 0x07800000,
+@@ -2121,7 +2070,7 @@
+ 0x9d0c8318,
+ 0x9d0c81b8,
+ 0x9d0c02b8,
+-0x98804ce0,
++0x988049b0,
+ 0x9c0c0510,
+ 0xa00602ba,
+ 0x07800000,
+@@ -2145,7 +2094,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c81b8,
+-0x98804f00,
++0x98804bd0,
+ 0x1440001d,
+ 0x9d0c8218,
+ 0x04a001dd,
+@@ -2153,7 +2102,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c81b8,
+-0x98804f80,
++0x98804c50,
+ 0x08200000,
+ 0x9c0c0018,
+ 0x1440001d,
+@@ -2170,7 +2119,7 @@
+ 0x07800000,
+ 0x9d0c8218,
+ 0x9d0c81b8,
+-0x98805080,
++0x98804d50,
+ 0x9c0c0018,
+ 0x1440001d,
+ 0x04a002dd,
+@@ -2186,7 +2135,7 @@
+ 0x07800000,
+ 0x9d0c8218,
+ 0x9d0c81b8,
+-0x98805180,
++0x98804e50,
+ 0x08200000,
+ 0x9f160028,
+ 0x9f168298,
+@@ -2196,7 +2145,7 @@
+ 0x07800000,
+ 0x9f160028,
+ 0x9f168298,
+-0x98805230,
++0x98804f00,
+ 0x9d0c8128,
+ 0x08200000,
+ 0x9f160020,
+@@ -2208,9 +2157,10 @@
+ 0x9f092060,
+ 0x9f082070,
+ 0x07800000,
++0x07800000,
+ 0x9d0c8108,
+ 0x9d0c8258,
+-0x988052a0,
++0x98804f70,
+ 0x08200000,
+ 0x9f160020,
+ 0x9f168098,
+@@ -2223,7 +2173,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8118,
+-0x98805370,
++0x98805050,
+ 0x08200000,
+ 0x9d008810,
+ 0x1280020d,
+@@ -2247,7 +2197,7 @@
+ 0x9d0c87b8,
+ 0x9d1082c8,
+ 0x9d108288,
+-0x988054a0,
++0x98805180,
+ 0x08200000,
+ 0x00000003,
+ 0x00000205,
+@@ -2260,25 +2210,25 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8128,
+-0x98805620,
++0x98805300,
+ 0x08200000,
+ 0x00001007,
+ 0x048002ff,
+ 0x013ffefe,
+ 0x06000007,
+ 0x00801605,
+-0x16015343,
+-0x0a8057e0,
++0x16014b23,
++0x0a8054c0,
+ 0x12000155,
+ 0x0200035e,
+ 0x0b200000,
+ 0x00800405,
+-0x16015343,
++0x16014b23,
+ 0x12000155,
+ 0x0200035e,
+ 0x0b200000,
+ 0x00801705,
+-0x16015343,
++0x16014b23,
+ 0x12000155,
+ 0x0200035e,
+ 0x0b200000,
+@@ -2298,7 +2248,7 @@
+ 0xdc180404,
+ 0x06000003,
+ 0x9c180480,
+-0x0aa05cc0,
++0x0aa05970,
+ 0x9c052b20,
+ 0x9c042820,
+ 0x9c023970,
+@@ -2307,41 +2257,38 @@
+ 0x40800503,
+ 0x0600000d,
+ 0x9d01b060,
+-0x4a805a20,
++0x4a8056d0,
+ 0x0400033d,
+ 0x04200427,
+ 0x04200d77,
+ 0x05800750,
+-0x0ae05a20,
+-0x00801f05,
+-0x06000185,
+-0x0a805a20,
++0x0ae056d0,
+ 0x16000006,
+ 0x16000145,
+-0x0a005ca0,
++0x0a005950,
+ 0x160fffd6,
+ 0x05800420,
+-0x0ae05ba0,
++0x0ae05850,
+ 0x160fffe6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae05c90,
++0x0ae05940,
+ 0x160ffff6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae05c90,
++0x0ae05940,
+ 0x16000006,
+ 0x04000344,
+ 0x05800420,
+-0x0ae05c90,
++0x0ae05940,
+ 0x16000016,
+ 0x04000344,
+ 0x05800420,
+-0x0ae05c90,
++0x0ae05940,
+ 0x16000026,
+ 0x04000344,
+ 0x05800420,
+-0x0ae05c90,
++0x0ae05940,
+ 0x16000036,
+ 0x013ffcf6,
+ 0x12000132,
+@@ -2360,7 +2307,7 @@
+ 0x003ffcf6,
+ 0x00800715,
+ 0x01000606,
+-0x0a0060d0,
++0x0a005d80,
+ 0x9c042b20,
+ 0x9c052920,
+ 0x9c023870,
+@@ -2372,43 +2319,43 @@
+ 0x160fffb6,
+ 0x00800503,
+ 0x05800420,
+-0x0ae05fd0,
++0x0ae05c80,
+ 0x160fffc6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x160fffd6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x160fffe6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x160ffff6,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000006,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000016,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000026,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000036,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000046,
+ 0x04000344,
+ 0x05800420,
+-0x0ae060b0,
++0x0ae05d60,
+ 0x16000056,
+ 0x013ffcf6,
+ 0x12000232,
+@@ -2426,7 +2373,7 @@
+ 0x003ffcf6,
+ 0x01000606,
+ 0x00800715,
+-0x16015346,
++0x16014b26,
+ 0x413ffefe,
+ 0x12000155,
+ 0x00000202,
+@@ -2451,7 +2398,7 @@
+ 0x06000005,
+ 0x40800f02,
+ 0x04c07f77,
+-0x4a806320,
++0x4a805fd0,
+ 0x04500273,
+ 0x00800a02,
+ 0x9e088100,
+@@ -2502,8 +2449,8 @@
+ 0x9d0c810c,
+ 0x9d0c815c,
+ 0x9d0c81ac,
+-0x98806530,
+-0x0aa064b0,
++0x988061e0,
++0x0aa06160,
+ 0x9e0f0120,
+ 0x08200000,
+ 0x00001004,
+@@ -2518,42 +2465,42 @@
+ 0x413ffefe,
+ 0x06000004,
+ 0x9c03a950,
+-0x4aa06700,
++0x4aa063b0,
+ 0x144000d2,
+-0x0a2069c0,
++0x0a206670,
+ 0x40001604,
+ 0x1440002d,
+ 0x06000004,
+-0x0a806840,
++0x0a8064f0,
+ 0x05800d40,
+-0x0ae06740,
+-0x0a206870,
+-0x0a0067f0,
++0x0ae063f0,
++0x0a206520,
++0x0a0064a0,
+ 0x042004d2,
+ 0x1440004d,
+-0x0a206870,
+-0x0a2069c0,
++0x0a206520,
++0x0a206670,
+ 0x06000002,
+-0x0a8067f0,
++0x0a8064a0,
+ 0x1440002d,
+ 0x00001604,
+ 0x05800d40,
+-0x0ac06840,
+-0x0a206870,
++0x0ac064f0,
++0x0a206520,
+ 0x003ffefe,
+ 0x40800905,
+ 0x048ffeff,
+ 0x9d03a950,
+ 0x08200000,
+ 0x04a0012d,
+-0x0a201ce0,
+-0x0a0067f0,
++0x0a201ad0,
++0x0a0064a0,
+ 0x16014246,
+ 0x40800605,
+ 0x048002ff,
+ 0x413ffefe,
+ 0x144000d3,
+-0x1601534e,
++0x16014b2e,
+ 0x9e0e0260,
+ 0x12000155,
+ 0x420005ee,
+@@ -2574,19 +2521,19 @@
+ 0x40000403,
+ 0x04c001d7,
+ 0x06000007,
+-0x4a806ab0,
++0x4a806760,
+ 0x16000017,
+ 0x00001e04,
+ 0x06000004,
+-0x0a806bd0,
++0x0a806880,
+ 0x40001c05,
+ 0x048001dd,
+ 0x01001604,
+ 0x01001405,
+-0x0a006b20,
++0x0a0067d0,
+ 0x00001a04,
+ 0x06000004,
+-0x0a806bd0,
++0x0a806880,
+ 0x40001805,
+ 0x048001dd,
+ 0x01001604,
+@@ -2596,11 +2543,11 @@
+ 0x16000005,
+ 0x40800a04,
+ 0x05c00630,
+-0x0a806bc0,
++0x0a806870,
+ 0x12000233,
+ 0x9e0e0530,
+ 0x9d140550,
+-0x0a006bd0,
++0x0a006880,
+ 0x01800017,
+ 0x08200000,
+ 0x048008ff,
+@@ -2626,13 +2573,13 @@
+ 0x01c00127,
+ 0x01c0012b,
+ 0x9c018201,
+-0x98806cd0,
++0x98806980,
+ 0x04800633,
+ 0x1440001d,
+ 0x00000034,
+ 0x04802833,
+ 0x01c00124,
+-0x98806d80,
++0x98806a30,
+ 0x16002102,
+ 0x9e0e0220,
+ 0x16000806,
+@@ -2646,11 +2593,11 @@
+ 0x16000005,
+ 0x16000006,
+ 0x06000008,
+-0x0aa06ec0,
++0x0aa06b70,
+ 0x16000015,
+ 0x000002a8,
+ 0x06000009,
+-0x0aa06f00,
++0x0aa06bb0,
+ 0x16000016,
+ 0x000002b9,
+ 0x16007102,
+@@ -2662,12 +2609,12 @@
+ 0x16006a4d,
+ 0x41800027,
+ 0x06000004,
+-0x0aa06ff0,
++0x0aa06ca0,
+ 0x06000005,
+-0x0aa07070,
++0x0aa06d20,
+ 0x06000001,
+-0x0aa07100,
+-0x0a0071f0,
++0x0aa06db0,
++0x0a006ea0,
+ 0x160000a8,
+ 0x400000d6,
+ 0x12000c88,
+@@ -2675,7 +2622,7 @@
+ 0x07800000,
+ 0x06000005,
+ 0x9d180078,
+-0x0a8070e0,
++0x0a806d90,
+ 0x160000c8,
+ 0x400000d6,
+ 0x12000c88,
+@@ -2684,7 +2631,7 @@
+ 0x07800000,
+ 0x9d180078,
+ 0x06000001,
+-0x0a807170,
++0x0a806e20,
+ 0x160000d8,
+ 0x400000d6,
+ 0x12000c88,
+@@ -2707,7 +2654,7 @@
+ 0x06000000,
+ 0x40000049,
+ 0x16006a82,
+-0x4a807290,
++0x4a806f40,
+ 0x16000005,
+ 0x04200959,
+ 0x05800590,
+@@ -2752,7 +2699,7 @@
+ 0x9c0c0018,
+ 0x9f0b0010,
+ 0x9f092080,
+-0x98807500,
++0x988071b0,
+ 0x9c0c0330,
+ 0x07800000,
+ 0x07800000,
+@@ -2760,7 +2707,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x06000004,
+-0x0a807740,
++0x0a8073f0,
+ 0x00000010,
+ 0x04800200,
+ 0x9c01aa50,
+@@ -2784,7 +2731,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8038,
+-0x988076f0,
++0x988073a0,
+ 0x00000010,
+ 0x04800200,
+ 0x04c07f00,
+@@ -2792,7 +2739,7 @@
+ 0x01000010,
+ 0x04a00133,
+ 0x06000003,
+-0x0aa073d0,
++0x0aa07080,
+ 0x08200000,
+ 0x16014521,
+ 0x16000bf5,
+@@ -2816,7 +2763,7 @@
+ 0x9c0c0018,
+ 0x9f0b0010,
+ 0x9f092090,
+-0x98807900,
++0x988075b0,
+ 0x9c0c0330,
+ 0x07800000,
+ 0x07800000,
+@@ -2824,7 +2771,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x06000004,
+-0x0a807b40,
++0x0a8077f0,
+ 0x00000010,
+ 0x04800200,
+ 0x9c01aa50,
+@@ -2848,7 +2795,7 @@
+ 0x07800000,
+ 0x07800000,
+ 0x9d0c8098,
+-0x98807af0,
++0x988077a0,
+ 0x00000010,
+ 0x04800200,
+ 0x04c07f00,
+@@ -2856,7 +2803,7 @@
+ 0x01000010,
+ 0x04a00133,
+ 0x06000003,
+-0x0aa077d0,
++0x0aa07480,
+ 0x08200000,
+ 0x00000004,
+ 0x00000405,
+@@ -2870,20 +2817,20 @@
+ 0x07800000,
+ 0x06000033,
+ 0x9e0e8220,
+-0x0aa07cf0,
++0x0aa079a0,
+ 0x9c1d0004,
+ 0x9c1d0044,
+ 0x07800000,
+ 0x9d0c0210,
+-0x0a007da0,
++0x0a007a50,
+ 0x06000023,
+-0x0aa07d50,
++0x0aa07a00,
+ 0x9c1d0004,
+ 0x9d040004,
+ 0x9d100200,
+-0x0a007da0,
++0x0a007a50,
+ 0x06000043,
+-0x0aa07da0,
++0x0aa07a50,
+ 0x9c180024,
+ 0x9d040004,
+ 0x9d180200,
+@@ -2891,7 +2838,60 @@
+ 0x05c00740,
+ 0x17800644,
+ 0x01000004,
+-0x0a007c10,
++0x0a0078c0,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -3249,18 +3249,18 @@
+ 0x00001001,
+ 0x00000002,
+ 0x00000002,
+-0x00001091,
+-0x000000aa,
+-0x00001001,
+-0x00001000,
+-0x00001091,
+-0x00001000,
+-0x000020e0,
+-0x00001000,
+-0x000020e0,
+-0x00001051,
+-0x00001051,
+-0x00001051,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -4813,36 +4813,6 @@
+ 0x00000000,
+ 0x00000000,
+ 0x00762489,
+-0x00fd664c,
+-0x00fac944,
+-0x00f6f528,
+-0x00f7ef00,
+-0x00fc5908,
+-0x0003a6f8,
+-0x00081100,
+-0x00090ad8,
+-0x000536bc,
+-0x000299b4,
+-0x00347e28,
+-0x00fa9fce,
+-0x0011d9ee,
+-0x00d923a2,
+-0x003cd732,
+-0x00b93516,
+-0x003dc512,
+-0x00d8d5b2,
+-0x0010e922,
+-0x00065708,
+-0x00124530,
+-0x001d8c28,
+-0x001d8c28,
+-0x00124530,
+-0x00065708,
+-0x003a7fe0,
+-0x0088e919,
+-0x00078cfe,
+-0x00f61f52,
+-0x0007712a,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -4999,7 +4969,7 @@
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+-0x00009560,
++0x00009510,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -6020,37 +5990,37 @@
+ 0x00010001,
+ 0x01430001,
+ 0x00000000,
+-0x002f0018,
+-0x01440050,
+-0x01450146,
+ 0x00000000,
+-0x00300018,
+-0x01480051,
+-0x01450147,
+ 0x00000000,
+-0x004a0023,
+-0x014d0033,
+-0x014a0149,
+ 0x00000000,
+-0x004b0023,
+-0x014e0036,
+-0x014a0149,
+ 0x00000000,
+-0x004c0023,
+-0x014f0039,
+-0x014a0149,
+ 0x00000000,
+-0x004a0023,
+-0x00d80033,
+-0x014c014b,
+ 0x00000000,
+-0x004b0023,
+-0x00d90036,
+-0x014c014b,
+ 0x00000000,
+-0x004c0023,
+-0x00da0039,
+-0x014c014b,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -6150,6 +6120,37 @@
+ 0x000010f4,
+ 0x0a541234,
+ 0x00000b54,
++0x04ec0438,
++0x047e04f7,
++0x00640488,
++0x004d0038,
++0x052a0505,
++0x04690512,
++0x05370628,
++0x00e90689,
++0x01f101c5,
++0x00d3044b,
++0x02ab02c9,
++0x07070788,
++0x02d50493,
++0x04b702b9,
++0x0208023a,
++0x02020230,
++0x07480708,
++0x000204cb,
++0x010300f7,
++0x011e0112,
++0x0136012a,
++0x0154013d,
++0x0144014c,
++0x0176015b,
++0x000301a1,
++0x01c301c2,
++0x060701c4,
++0x01ad054f,
++0x00000179,
++0x00000000,
++0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -6182,37 +6183,6 @@
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+-0x051f0446,
+-0x04b1052a,
+-0x006404bb,
+-0x004d0038,
+-0x055c0537,
+-0x049c0544,
+-0x0569065d,
+-0x00e906be,
+-0x01ff01fe,
+-0x00d30459,
+-0x02b902d7,
+-0x073c07bd,
+-0x02e304c6,
+-0x04ea02c7,
+-0x02160248,
+-0x0210023e,
+-0x077d073d,
+-0x047704fe,
+-0x00f70002,
+-0x01120103,
+-0x012a011e,
+-0x01500149,
+-0x015f0167,
+-0x01790157,
+-0x01c20194,
+-0x01e30003,
+-0x01e501e4,
+-0x0581063c,
+-0x019701ce,
+-0x0136019a,
+-0x01e6016e,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -9367,10 +9337,10 @@
+ 0x0004e313,
+ 0x00000000,
+ 0x0004f613,
+-0x00010013,
+-0x00001700,
+-0x00010013,
+-0x00001700,
++0x00170013,
++0x00000000,
++0x00170013,
++0x00000000,
+ 0x00079313,
+ 0x00079313,
+ 0x0007a613,
+@@ -9587,30 +9557,30 @@
+ 0x00135000,
+ 0x00000000,
+ 0x0013d000,
+-0x000aa213,
+-0x000aa213,
+-0x00000013,
+ 0x00000000,
+-0x0006ed00,
+-0x00076013,
+-0x0006ee00,
+-0x00076013,
+-0x000ab513,
+-0x000ab513,
+ 0x00000000,
+-0x0007730b,
+-0x0000000b,
+-0x00000c00,
+ 0x00000000,
+-0x0004f613,
+-0x00000013,
+-0x00000c00,
+-0x0007930b,
+-0x0007930b,
+-0x0007a60b,
+-0x0007a60b,
+-0x0007b90b,
+-0x0007b90b,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
++0x00000000,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -12979,54 +12949,54 @@
+ 0x00162b95,
+ 0x00199999,
+ 0x00199999,
++0x00162b95,
++0x0018ba4a,
++0x000ccccc,
++0x00162b95,
+ 0x00000000,
++0x00121a18,
++0x00f33333,
++0x000ccccc,
++0x00e9d46a,
++0x0006a032,
++0x00e66666,
+ 0x00000000,
++0x00e9d46a,
++0x00f95fcd,
++0x00f33333,
++0x00f33333,
++0x00ffffff,
++0x00ede5e7,
++0x000ccccc,
++0x00e9d46a,
++0x00162b95,
++0x00e745b5,
++0x00199999,
++0x00e66666,
++0x00162b95,
++0x00e745b5,
++0x000ccccc,
++0x00e9d46a,
+ 0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
++0x00ede5e7,
++0x00f33333,
++0x00f33333,
++0x00e9d46a,
++0x00f95fcf,
++0x00e66666,
++0x00ffffff,
++0x00e9d46a,
++0x0006a032,
++0x00f33333,
++0x000ccccc,
++0x00ffffff,
++0x00121a18,
++0x000ccccc,
++0x00162b95,
++0x00162b95,
++0x0018ba4a,
++0x00199999,
++0x00199999,
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+@@ -14383,79 +14353,3 @@
+ 0x00000000,
+ 0x00000000,
+ 0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+-0x00000000,
+diff --git a/sound/soc/omap/abe/abe_functionsid.h b/sound/soc/omap/abe/abe_functionsid.h
+index cff42b6..c341927 100644
+--- a/sound/soc/omap/abe/abe_functionsid.h
++++ b/sound/soc/omap/abe/abe_functionsid.h
+@@ -95,7 +95,6 @@
+ #define C_ABE_FW_FUNCTION_CHECK_IIR_LEFT                    32
+ #define C_ABE_FW_FUNCTION_CHECK_IIR_RIGHT                   33
+ #define C_ABE_FW_FUNCTION_FIR12_2                           34
+-#define C_ABE_FW_FUNCTION_IIR_SRC_MIC_NO_PRESCALING         35
+ /*
+  *    COPY function ID definitions
+  */
+@@ -121,8 +120,4 @@
+ #define IO_IP_CFPID                                         19
+ #define COPY_UNDERFLOW_CFPID                                20
+ #define COPY_MCPDM_DL_HF_PDL1_CFPID                         21
+-#define COPY_MCPDM_DL_HF_PDL2_CFPID                         22
+-#define S2D_MONO_16_16_CFPID                                23
+-#define D2S_MONO_16_16_CFPID                                24
+-#define COPY_DMIC_NO_PRESCALE_CFPID                         25
+ #endif /* _ABE_FUNCTIONSID_H_ */
+diff --git a/sound/soc/omap/abe/abe_initxxx_labels.h b/sound/soc/omap/abe/abe_initxxx_labels.h
+index 1d6b94d..2635f7c 100644
+--- a/sound/soc/omap/abe/abe_initxxx_labels.h
++++ b/sound/soc/omap/abe/abe_initxxx_labels.h
+@@ -381,18 +381,18 @@
+ #define VX_UL_8_48_OSR_LP_labelID                           321
+ #define CHECK_IIR_8K_labelID                                322
+ #define CHECK_IIR_16K_labelID                               323
+-#define EARP_48_96_LP_DATA_NEW_labelID                      324
+-#define SRC_48_96_LP_NEW_labelID                            325
+-#define UP_48_96_LP_NEW_COEFS_DC_HS_labelID                 326
+-#define UP_48_96_LP_NEW_COEFS_DC_HF_labelID                 327
+-#define IHF_48_96_LP_DATA_NEW_labelID                       328
+-#define DOWN_96_48_DMIC_Coefs_no_prescale_labelID           329
+-#define DOWN_96_48_DMIC_Regs_no_prescale_labelID            330
+-#define DOWN_96_48_DMIC_Coefs_np_old_coeff_labelID          331
+-#define DOWN_96_48_DMIC_Regs_np_old_coeff_labelID           332
+-#define DMIC0_96_48_new_iir_data_labelID                    333
+-#define DMIC1_96_48_new_iir_data_labelID                    334
+-#define DMIC2_96_48_new_iir_data_labelID                    335
++#define Dummy_324_labelID                                   324
++#define Dummy_325_labelID                                   325
++#define Dummy_326_labelID                                   326
++#define Dummy_327_labelID                                   327
++#define Dummy_328_labelID                                   328
++#define Dummy_329_labelID                                   329
++#define Dummy_330_labelID                                   330
++#define Dummy_331_labelID                                   331
++#define Dummy_332_labelID                                   332
++#define Dummy_333_labelID                                   333
++#define Dummy_334_labelID                                   334
++#define Dummy_335_labelID                                   335
+ #define Dummy_336_labelID                                   336
+ #define Dummy_337_labelID                                   337
+ #define Dummy_338_labelID                                   338
+diff --git a/sound/soc/omap/abe/abe_main.c b/sound/soc/omap/abe/abe_main.c
+index ba123fe..7db3e6b 100644
+--- a/sound/soc/omap/abe/abe_main.c
++++ b/sound/soc/omap/abe/abe_main.c
+@@ -760,19 +760,5 @@ int abe_mono_mixer(u32 id, u32 on_off)
+ }
+ EXPORT_SYMBOL(abe_mono_mixer);
+ 
+-/**
+- * abe_write_select_pdm_output - Select the path for OPP25 route input
+- *
+- * Parameters:
+- *   path: 1 for output om headset, 2 for output on handsfree,
+- *	 3 for output on headset and handsfree at the same time
+- *
+- */
+-void abe_write_select_pdm_output(u32 path)
+-{
+-	abe->mcpdm_path = path;
+-}
+-EXPORT_SYMBOL(abe_write_select_pdm_output);
+-
+ EXPORT_SYMBOL(abe_use_compensated_gain);
+ 
+diff --git a/sound/soc/omap/abe/abe_main.h b/sound/soc/omap/abe/abe_main.h
+index 9ac129d..b8f52f6 100644
+--- a/sound/soc/omap/abe/abe_main.h
++++ b/sound/soc/omap/abe/abe_main.h
+@@ -135,7 +135,6 @@
+ #define EIGHT_MSB 11
+ #define NINE_MSB 12
+ #define TEN_MSB 13
+-#define MONO_16_16 14
+ /*
+  *	PORT PROTOCOL TYPE - abe_port_protocol_switch_id
+  */
+@@ -666,6 +665,5 @@ void abe_add_subroutine(u32 *id, abe_subroutine2 f,
+ 
+ u32 abe_plug_subroutine(u32 *id, abe_subroutine2 f, u32 n,
+ 			u32 *params);
+-void abe_write_select_pdm_output(u32 path);
+ 
+ #endif				/* _ABE_MAIN_H_ */
+diff --git a/sound/soc/omap/abe/abe_port.c b/sound/soc/omap/abe/abe_port.c
+index fa3ad0b..d872de5 100644
+--- a/sound/soc/omap/abe/abe_port.c
++++ b/sound/soc/omap/abe/abe_port.c
+@@ -989,8 +989,6 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 			abe->MultiFrame[18][1] = 0;
+ 			smem1 = smem_mm_dl;
+ 		}
+-		/* able  interrupt to be generated at the first frame */
+-		desc_pp.split_addr1 = 1;
+ 		copy_func_index = (u8) abe_dma_port_copy_subroutine_id(id);
+ 		dmareq_addr = abe_port[id].protocol.p.prot_pingpong.irq_addr;
+ 		dmareq_field = abe_port[id].protocol.p.prot_pingpong.irq_data;
+@@ -1160,32 +1158,24 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 				/*Voice_8k_DL_labelID */
+ 				smem1 = IO_VX_DL_ASRC_labelID;
+ 
+-				/* ASRC set only for McBSP */
+-				if ((prot->protocol_switch == SERIAL_PORT_PROT)) {
+-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
+-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
+-						/* the 1st opened port is VX_DL_PORT
+-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
+-						 * referring to VX_DL flow_counter */
+-						abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+-								ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_8);
+-							abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+-								ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_8_SIB);
+-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
+-						abe_init_asrc_vx_ul(-250);
+-						abe_init_asrc_vx_dl(250);
+-					} else {
+-						/* Do nothing, Scheduling Table has already been patched */
+-					}
+-				} else {
+-					/* Enable only ASRC on VXDL port*/
++				if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE) &&
++				    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE)) {
++					/* the 1st opened port is VX_DL_PORT
++					 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
++					 * referring to VX_DL flow_counter */
+ 					abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+-						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_8);
+-					abe_init_asrc_vx_dl(0);
++							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_8);
++					abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
++							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_8_SIB);
++					/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
++					abe_init_asrc_vx_ul(-250);
++					abe_init_asrc_vx_dl(250);
++				} else {
++					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+-			} else if (abe_port[id].format.f == 16000) {			/* 16000Hz sampling*/
++			} else {
+ 				abe->MultiFrame[21][2] =
+ 					ABE_TASK_ID(C_ABE_FW_TASK_CHECK_IIR_RIGHT_16K);
+ 				abe->MultiFrame[23][2] =
+@@ -1195,36 +1185,23 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 				/* Voice_16k_DL_labelID */
+ 				smem1 = IO_VX_DL_ASRC_labelID;
+ 
+-				/* ASRC set only for McBSP */
+-				if ((prot->protocol_switch == SERIAL_PORT_PROT)) {
+-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
+-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
+-						/* the 1st opened port is VX_DL_PORT
+-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
+-						 * referring to VX_DL flow_counter */
+-						abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+-							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_16);
+-						abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+-							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_16_SIB);
+-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
+-						abe_init_asrc_vx_ul(-250);
+-						abe_init_asrc_vx_dl(250);
+-					} else {
+-						/* Do nothing, Scheduling Table has already been patched */
+-					}
+-				} else {
+-					/* Enable only ASRC on VXDL port*/
++				if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE) &&
++				    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE)) {
++					/* the 1st opened port is VX_DL_PORT
++					 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
++					 * referring to VX_DL flow_counter */
+ 					abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+ 						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_16);
+-					abe_init_asrc_vx_dl(0);
++					abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
++						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_16_SIB);
++					/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
++					abe_init_asrc_vx_ul(-250);
++					abe_init_asrc_vx_dl(250);
++				} else {
++					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+-			} else {
+-				abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] = 0;		/* Disable asrc task */
+-				abe->MultiFrame[TASK_VX_DL_SLT][TASK_VX_DL_IDX] = 0;
+-				/* Buffer in SMEM at 48KHz*/
+-				smem1 = VX_DL_labelID;
+ 			}
+ 			break;
+ 		case OMAP_ABE_VX_UL_PORT:
+@@ -1241,32 +1218,24 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 				   ABE_TASK_ID(C_ABE_FW_TASK_ECHO_REF_48_8); */
+ 				smem1 = Voice_8k_UL_labelID;
+ 
+-				/* ASRC set only for McBSP */
+-				if ((prot->protocol_switch == SERIAL_PORT_PROT)) {
+-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
+-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
+-						/* the 1st opened port is VX_UL_PORT
+-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
+-						 * referring to VX_UL flow_counter */
+-						abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
++				if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE) &&
++				    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE)) {
++					/* the 1st opened port is VX_UL_PORT
++					 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
++					 * referring to VX_UL flow_counter */
++					abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+ 							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_8_SIB);
+-						abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
++					abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+ 							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_8);
+-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
+-						abe_init_asrc_vx_ul(-250);
+-						abe_init_asrc_vx_dl(250);
+-					} else {
+-						/* Do nothing, Scheduling Table has already been patched */
+-					}
++					/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
++					abe_init_asrc_vx_ul(-250);
++					abe_init_asrc_vx_dl(250);
+ 				} else {
+-					/* Enable only ASRC on VXUL port*/
+-					abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+-						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_8);
+-					abe_init_asrc_vx_ul(0);
++					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+-			} else if (abe_port[id].format.f == 16000) {			/* 16000Hz sampling*/
++			} else {
+ 				abe->MultiFrame[21][2] =
+ 					ABE_TASK_ID(C_ABE_FW_TASK_CHECK_IIR_RIGHT_16K);
+ 				abe->MultiFrame[23][2] =
+@@ -1277,36 +1246,23 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 				   ABE_TASK_ID(C_ABE_FW_TASK_ECHO_REF_48_16); */
+ 				smem1 = Voice_16k_UL_labelID;
+ 
+-				/* ASRC set only for McBSP */
+-				if ((prot->protocol_switch == SERIAL_PORT_PROT)) {
+-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
+-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
+-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
+-						/* the 1st opened port is VX_UL_PORT
+-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
+-						 * referring to VX_UL flow_counter */
+-						abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
+-							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_16_SIB);
+-						abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+-							ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_16);
+-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
+-						abe_init_asrc_vx_ul(-250);
+-						abe_init_asrc_vx_dl(250);
+-					} else {
+-						/* Do nothing, Scheduling Table has already been patched */
+-					}
+-				} else {
+-					/* Enable only ASRC on VXDL port*/
++				if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE) &&
++				    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
++					OMAP_ABE_PORT_ACTIVITY_IDLE)) {
++					/* the 1st opened port is VX_UL_PORT
++					 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
++					 * referring to VX_UL flow_counter */
++					abe->MultiFrame[TASK_ASRC_VX_DL_SLT][TASK_ASRC_VX_DL_IDX] =
++						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_DL_16_SIB);
+ 					abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] =
+ 						ABE_TASK_ID(C_ABE_FW_TASK_ASRC_VX_UL_16);
+-					abe_init_asrc_vx_ul(0);
++					/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
++					abe_init_asrc_vx_ul(-250);
++					abe_init_asrc_vx_dl(250);
++				} else {
++					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+-			} else {
+-				abe->MultiFrame[TASK_ASRC_VX_UL_SLT][TASK_ASRC_VX_UL_IDX] = 0;		/* Disable asrc task */
+-				abe->MultiFrame[TASK_VX_UL_SLT][TASK_VX_UL_IDX] = 0;
+-				/* Buffer in SMEM at 48KHz*/
+-				smem1 = VX_UL_M_labelID;
+ 			}
+ 			break;
+ 		case OMAP_ABE_BT_VX_DL_PORT:
+@@ -1344,7 +1300,7 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+ #endif
+-			} else if (abe_port[id].format.f == 16000) {
++			} else {
+ 				if (dOppMode32 == DOPPMODE32_OPP100) {
+ 					abe->MultiFrame[TASK_BT_DL_48_8_SLT][TASK_BT_DL_48_8_IDX] =
+ 						ABE_TASK_ID(C_ABE_FW_TASK_BT_DL_48_16_OPP100);
+@@ -1370,9 +1326,6 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+ #endif
+-			} else {
+-				/* Buffer in SMEM at 48KHz*/
+-				smem1 = DL1_GAIN_out_labelID;
+ 			}
+ 			break;
+ 		case OMAP_ABE_BT_VX_UL_PORT:
+@@ -1410,7 +1363,7 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+ #endif
+-			} else if (abe_port[id].format.f == 16000) {
++			} else {
+ 				abe->MultiFrame[TASK_BT_UL_8_48_SLT][TASK_BT_UL_8_48_IDX] =
+ 					ABE_TASK_ID(C_ABE_FW_TASK_BT_UL_16_48);
+ 				if (dOppMode32 == DOPPMODE32_OPP100)
+@@ -1435,11 +1388,6 @@ void abe_init_io_tasks(u32 id, abe_data_format_t *format,
+ 					/* Do nothing, Scheduling Table has already been patched */
+ 				}
+ #endif
+-			} else {
+-				abe->MultiFrame[TASK_ASRC_BT_UL_SLT][TASK_ASRC_BT_UL_IDX] = 0;		/* Disable asrc task */
+-				abe->MultiFrame[TASK_BT_UL_8_48_SLT][TASK_BT_UL_8_48_IDX] = 0;
+-				/* Buffer in SMEM at 48KHz */
+-				smem1 = BT_UL_labelID;
+ 			}
+ 			break;
+ 		case OMAP_ABE_MM_DL_PORT:
+@@ -1659,8 +1607,6 @@ void abe_format_switch(abe_data_format_t *f, u32 *iter, u32 *mulfac)
+ 		break;
+ 	}
+ 	*iter = (n_freq * (*mulfac));
+-	if (f->samp_format == MONO_16_16)
+-		*iter /= 2;
+ }
+ /**
+  * abe_dma_port_iteration
+@@ -1722,9 +1668,6 @@ u32 abe_dma_port_copy_subroutine_id(u32 port_id)
+ 		case STEREO_16_16:
+ 			sub_id = D2S_STEREO_16_16_CFPID;
+ 			break;
+-		case MONO_16_16:
+-			sub_id = D2S_MONO_16_16_CFPID;
+-			break;
+ 		case STEREO_MSB:
+ 			sub_id = D2S_STEREO_MSB_CFPID;
+ 			break;
+@@ -1751,28 +1694,12 @@ u32 abe_dma_port_copy_subroutine_id(u32 port_id)
+ 		case STEREO_16_16:
+ 			sub_id = S2D_STEREO_16_16_CFPID;
+ 			break;
+-		case MONO_16_16:
+-			sub_id = S2D_MONO_16_16_CFPID;
+-			break;
+ 		case STEREO_MSB:
+ 			sub_id = S2D_STEREO_MSB_CFPID;
+ 			break;
+ 		case SIX_MSB:
+ 			if (port_id == OMAP_ABE_PDM_DL_PORT) {
+-				/* McPDM default output mode selection
+-				 * 1 - Separate headset (DL1) and handsfree (DL2) paths
+-				 *     => Need OPP100 for Handsfree output
+-				 * 2 - DL1 on handsfree path and mute headset
+-				 * 3 - DL1 on both headset and handsfree
+-				 */
+-				if (abe->mcpdm_path == 1)
+-					sub_id = COPY_MCPDM_DL_CFPID;
+-				else if (abe->mcpdm_path == 2)
+-					sub_id = COPY_MCPDM_DL_HF_PDL1_CFPID;
+-				else if (abe->mcpdm_path == 3)
+-					sub_id = COPY_MCPDM_DL_HF_PDL2_CFPID;
+-				else
+-					sub_id = COPY_MCPDM_DL_CFPID;
++				sub_id = COPY_MCPDM_DL_CFPID;
+ 				break;
+ 			}
+ 			if (port_id == OMAP_ABE_MM_UL_PORT) {
+diff --git a/sound/soc/omap/abe/abe_sm_addr.h b/sound/soc/omap/abe/abe_sm_addr.h
+index 3be12d0..514ed0c 100644
+--- a/sound/soc/omap/abe/abe_sm_addr.h
++++ b/sound/soc/omap/abe/abe_sm_addr.h
+@@ -361,7 +361,3 @@
+ #define OMAP_ABE_S_VX_UL_48_8_LP_NEW_DATA_SIZE             0x88
+ #define OMAP_ABE_S_VX_UL_8_48_OSR_LP_DATA_ADDR             0x5148
+ #define OMAP_ABE_S_VX_UL_8_48_OSR_LP_DATA_SIZE             0x3C8
+-#define OMAP_ABE_S_EARP_48_96_LP_NEW_DATA_ADDR             0x5510
+-#define OMAP_ABE_S_EARP_48_96_LP_NEW_DATA_SIZE             0x98
+-#define OMAP_ABE_S_IHF_48_96_LP_NEW_DATA_ADDR              0x55A8
+-#define OMAP_ABE_S_IHF_48_96_LP_NEW_DATA_SIZE              0x98
+diff --git a/sound/soc/omap/abe/abe_taskid.h b/sound/soc/omap/abe/abe_taskid.h
+index 30f2691..983e7ac 100644
+--- a/sound/soc/omap/abe/abe_taskid.h
++++ b/sound/soc/omap/abe/abe_taskid.h
+@@ -98,8 +98,8 @@
+ #define C_ABE_FW_TASK_ECHO_REF_48_16_LP                     38
+ #define C_ABE_FW_TASK_ECHO_REF_48_16_HP                     39
+ #define C_ABE_FW_TASK_DL1_EQ                                40
+-#define C_ABE_FW_TASK_IHF_48_96_LP_OLD                      41
+-#define C_ABE_FW_TASK_EARP_48_96_LP_OLD                     42
++#define C_ABE_FW_TASK_IHF_48_96_LP                          41
++#define C_ABE_FW_TASK_EARP_48_96_LP                         42
+ #define C_ABE_FW_TASK_DL1_GAIN                              43
+ #define C_ABE_FW_TASK_DL2_GAIN                              44
+ #define C_ABE_FW_TASK_IO_PING_PONG                          45
+@@ -195,14 +195,7 @@
+ #define C_ABE_FW_TASK_VX_UL_48_8_LP_FIR                     135
+ #define C_ABE_FW_TASK_CHECK_IIR_LEFT_16K                    136
+ #define C_ABE_FW_TASK_CHECK_IIR_RIGHT_16K                   137
+-#define C_ABE_FW_TASK_EARP_48_96_LP                         138
+-#define C_ABE_FW_TASK_IHF_48_96_LP                          139
+-#define C_ABE_FW_TASK_DMIC1_96_48_LP_NO_PRESCALE            140
+-#define C_ABE_FW_TASK_DMIC2_96_48_LP_NO_PRESCALE            141
+-#define C_ABE_FW_TASK_DMIC3_96_48_LP_NO_PRESCALE            142
+-#define C_ABE_FW_TASK_DMIC1_96_48_LP_NP_OLD_COEFF           143
+-#define C_ABE_FW_TASK_DMIC2_96_48_LP_NP_OLD_COEFF           144
+-#define C_ABE_FW_TASK_DMIC3_96_48_LP_NP_OLD_COEFF           145
++
+ /*
+  * Alternate firmware compatibility macros
+  */
+@@ -213,4 +206,5 @@
+ #define C_ABE_FW_TASK_BT_DL_48_8_FIR_OPP100_FW_COMPAT       C_ABE_FW_TASK_BT_DL_48_8_OPP100
+ #define C_ABE_FW_TASK_BT_DL_48_8_FIR_FW_COMPAT              C_ABE_FW_TASK_BT_DL_48_8
+ #endif
++
+ #endif /* _ABE_TASKID_H_ */
+diff --git a/sound/soc/omap/abe/abe_typ.h b/sound/soc/omap/abe/abe_typ.h
+index 28d8b05..650d043 100644
+--- a/sound/soc/omap/abe/abe_typ.h
++++ b/sound/soc/omap/abe/abe_typ.h
+@@ -168,7 +168,6 @@ typedef u32 abe_patch_rev;
+ #define EIGHT_MSB 11
+ #define NINE_MSB 12
+ #define TEN_MSB 13
+-#define MONO_16_16 14
+ /*
+  *	PORT PROTOCOL TYPE - abe_port_protocol_switch_id
+  */
+diff --git a/sound/soc/omap/omap-abe-dsp.c b/sound/soc/omap/omap-abe-dsp.c
+index bb0efe0..0b7c30a 100644
+--- a/sound/soc/omap/omap-abe-dsp.c
++++ b/sound/soc/omap/omap-abe-dsp.c
+@@ -334,7 +334,6 @@ static DECLARE_TLV_DB_SCALE(voice_dl1_tlv, -12000, 100, 3000);
+ /* Media DL1 volume control from -120 to 30 dB in 1 dB steps */
+ static DECLARE_TLV_DB_SCALE(capture_dl1_tlv, -12000, 100, 3000);
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ /* Media DL2 volume control from -120 to 30 dB in 1 dB steps */
+ static DECLARE_TLV_DB_SCALE(mm_dl2_tlv, -12000, 100, 3000);
+ 
+@@ -346,7 +345,6 @@ static DECLARE_TLV_DB_SCALE(voice_dl2_tlv, -12000, 100, 3000);
+ 
+ /* Media DL2 volume control from -120 to 30 dB in 1 dB steps */
+ static DECLARE_TLV_DB_SCALE(capture_dl2_tlv, -12000, 100, 3000);
+-#endif
+ 
+ /* SDT volume control from -120 to 30 dB in 1 dB steps */
+ static DECLARE_TLV_DB_SCALE(sdt_ul_tlv, -12000, 100, 3000);
+@@ -413,7 +411,6 @@ static int dl1_put_mixer(struct snd_kcontrol *kcontrol,
+ 	return 1;
+ }
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ static int dl2_put_mixer(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+ {
+@@ -437,7 +434,6 @@ static int dl2_put_mixer(struct snd_kcontrol *kcontrol,
+ 	pm_runtime_put_sync(the_abe->dev);
+ 	return 1;
+ }
+-#endif
+ 
+ static int audio_ul_put_mixer(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+@@ -529,11 +525,9 @@ static int abe_dsp_set_mono_mixer(int id, int enable)
+ 	case MIX_DL1_MONO:
+ 		mixer = MIXDL1;
+ 		break;
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	case MIX_DL2_MONO:
+ 		mixer = MIXDL2;
+ 		break;
+-#endif
+ 	case MIX_AUDUL_MONO:
+ 		mixer = MIXAUDUL;
+ 		break;
+@@ -730,7 +724,6 @@ static int volume_put_dl1_mixer(struct snd_kcontrol *kcontrol,
+ 	return 1;
+ }
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ static int volume_put_dl2_mixer(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+ {
+@@ -744,7 +737,6 @@ static int volume_put_dl2_mixer(struct snd_kcontrol *kcontrol,
+ 
+ 	return 1;
+ }
+-#endif
+ 
+ static int volume_put_gain(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+@@ -779,7 +771,6 @@ static int volume_get_dl1_mixer(struct snd_kcontrol *kcontrol,
+ 	return 0;
+ }
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ static int volume_get_dl2_mixer(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+ {
+@@ -794,7 +785,6 @@ static int volume_get_dl2_mixer(struct snd_kcontrol *kcontrol,
+ 
+ 	return 0;
+ }
+-#endif
+ 
+ static int volume_get_audul_mixer(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+@@ -1004,7 +994,6 @@ static const struct snd_kcontrol_new dl1_mixer_controls[] = {
+ 		abe_get_mixer, dl1_put_mixer),
+ };
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ /* DL2 mixer paths */
+ static const struct snd_kcontrol_new dl2_mixer_controls[] = {
+ 	SOC_SINGLE_EXT("Tones", MIX_DL2_INPUT_TONES, MIX_DL2_TONES, 1, 0,
+@@ -1016,7 +1005,6 @@ static const struct snd_kcontrol_new dl2_mixer_controls[] = {
+ 	SOC_SINGLE_EXT("Multimedia", MIX_DL2_INPUT_MM_DL, MIX_DL2_MEDIA, 1, 0,
+ 		abe_get_mixer, dl2_put_mixer),
+ };
+-#endif
+ 
+ /* AUDUL ("Voice Capture Mixer") mixer paths */
+ static const struct snd_kcontrol_new audio_ul_mixer_controls[] = {
+@@ -1048,17 +1036,10 @@ static const struct snd_kcontrol_new sdt_mixer_controls[] = {
+ 		abe_get_mixer, sdt_put_mixer),
+ };
+ 
+-/* Virtual PDM_DL1 Switch */
++/* Virtual PDM_DL Switch */
+ static const struct snd_kcontrol_new pdm_dl1_switch_controls =
+-	SOC_SINGLE_EXT("Switch", ABE_VIRTUAL_SWITCH, MIX_SWITCH_PDM_DL1, 1, 0,
+-			abe_get_mixer, abe_put_switch);
+-
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-/* Virtual PDM_DL2 Switch: DL1 -> PDM_DL2 */
+-static const struct snd_kcontrol_new pdm_dl2_switch_controls =
+-	SOC_SINGLE_EXT("Switch", ABE_VIRTUAL_SWITCH, MIX_SWITCH_PDM_DL2, 1, 0,
++	SOC_SINGLE_EXT("Switch", ABE_VIRTUAL_SWITCH, MIX_SWITCH_PDM_DL, 1, 0,
+ 			abe_get_mixer, abe_put_switch);
+-#endif
+ 
+ /* Virtual BT_VX_DL Switch */
+ static const struct snd_kcontrol_new bt_vx_dl_switch_controls =
+@@ -1085,7 +1066,6 @@ static const struct snd_kcontrol_new abe_controls[] = {
+ 		MIX_DL1_INPUT_MM_UL2, 0, 149, 0,
+ 		volume_get_dl1_mixer, volume_put_dl1_mixer, capture_dl1_tlv),
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	/* DL2 mixer gains */
+ 	SOC_SINGLE_EXT_TLV("DL2 Media Playback Volume",
+ 		MIX_DL2_INPUT_MM_DL, 0, 149, 0,
+@@ -1099,7 +1079,6 @@ static const struct snd_kcontrol_new abe_controls[] = {
+ 	SOC_SINGLE_EXT_TLV("DL2 Capture Playback Volume",
+ 		MIX_DL2_INPUT_MM_UL2, 0, 149, 0,
+ 		volume_get_dl2_mixer, volume_put_dl2_mixer, capture_dl2_tlv),
+-#endif
+ 
+ 	/* VXREC mixer gains */
+ 	SOC_SINGLE_EXT_TLV("VXREC Media Volume",
+@@ -1160,10 +1139,8 @@ static const struct snd_kcontrol_new abe_controls[] = {
+ 
+ 	SOC_SINGLE_EXT("DL1 Mono Mixer", MIXDL1, MIX_DL1_MONO, 1, 0,
+ 		abe_get_mono_mixer, abe_put_mono_mixer),
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	SOC_SINGLE_EXT("DL2 Mono Mixer", MIXDL2, MIX_DL2_MONO, 1, 0,
+ 		abe_get_mono_mixer, abe_put_mono_mixer),
+-#endif
+ 	SOC_SINGLE_EXT("AUDUL Mono Mixer", MIXAUDUL, MIX_AUDUL_MONO, 1, 0,
+ 		abe_get_mono_mixer, abe_put_mono_mixer),
+ };
+@@ -1198,13 +1175,8 @@ static const struct snd_soc_dapm_widget abe_dapm_widgets[] = {
+ 			W_AIF_PDM_UL1, ABE_OPP_50, 0),
+ 	SND_SOC_DAPM_AIF_OUT("PDM_DL1", "HS Playback", 0,
+ 			W_AIF_PDM_DL1, ABE_OPP_25, 0),
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	SND_SOC_DAPM_AIF_OUT("PDM_DL2", "HF Playback", 0,
+ 			W_AIF_PDM_DL2, ABE_OPP_100, 0),
+-#else
+-	SND_SOC_DAPM_AIF_OUT("PDM_DL2", "HF Playback", 0,
+-			W_AIF_PDM_DL2, ABE_OPP_25, 0),
+-#endif
+ 	SND_SOC_DAPM_AIF_OUT("PDM_VIB", "Vibra Playback", 0,
+ 			W_AIF_PDM_VIB, ABE_OPP_100, 0),
+ 	SND_SOC_DAPM_AIF_IN("BT_VX_UL", "BT Capture", 0,
+@@ -1254,11 +1226,9 @@ static const struct snd_soc_dapm_widget abe_dapm_widgets[] = {
+ 	SND_SOC_DAPM_MIXER("DL1 Mixer",
+ 			W_MIXER_DL1, ABE_OPP_25, 0, dl1_mixer_controls,
+ 			ARRAY_SIZE(dl1_mixer_controls)),
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	SND_SOC_DAPM_MIXER("DL2 Mixer",
+ 			W_MIXER_DL2, ABE_OPP_100, 0, dl2_mixer_controls,
+ 			ARRAY_SIZE(dl2_mixer_controls)),
+-#endif
+ 
+ 	/* DL1 Mixer Input volumes ?????*/
+ 	SND_SOC_DAPM_PGA("DL1 Media Volume",
+@@ -1286,15 +1256,7 @@ static const struct snd_soc_dapm_widget abe_dapm_widgets[] = {
+ 
+ 	/* Virtual PDM_DL1 Switch */
+ 	SND_SOC_DAPM_MIXER("DL1 PDM",
+-			W_VSWITCH_DL1_PDM1, ABE_OPP_25, 0,
+-			&pdm_dl1_switch_controls, 1),
+-
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	/* Virtual PDM_DL2 Switch */
+-	SND_SOC_DAPM_MIXER("DL1 PDM_DL2",
+-			W_VSWITCH_DL1_PDM2, ABE_OPP_25, 0,
+-			&pdm_dl2_switch_controls, 1),
+-#endif
++			W_VSWITCH_DL1_PDM, ABE_OPP_25, 0, &pdm_dl1_switch_controls, 1),
+ 
+ 	/* Virtual BT_VX_DL Switch */
+ 	SND_SOC_DAPM_MIXER("DL1 BT_VX",
+@@ -1308,9 +1270,7 @@ static const struct snd_soc_dapm_widget abe_dapm_widgets[] = {
+ 	SND_SOC_DAPM_MIXER("Sidetone Capture VMixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+ 	SND_SOC_DAPM_MIXER("Voice Capture VMixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+ 	SND_SOC_DAPM_MIXER("DL1 Capture VMixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	SND_SOC_DAPM_MIXER("DL2 Capture VMixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+-#endif
+ 
+ 	/* Join our MM_DL and MM_DL_LP playback */
+ 	SND_SOC_DAPM_MIXER("MM_DL VMixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+@@ -1553,7 +1513,6 @@ static const struct snd_soc_dapm_route intercon[] = {
+ 	{"MM_EXT_DL", NULL, "DL1 MM_EXT"},
+ 
+ 	/* Handsfree (DL2) playback path */
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 	{"DL2 Mixer", "Tones", "TONES_DL"},
+ 	{"DL2 Mixer", "Voice", "VX DL VMixer"},
+ 	{"DL2 Mixer", "Capture", "DL2 Capture VMixer"},
+@@ -1563,10 +1522,6 @@ static const struct snd_soc_dapm_route intercon[] = {
+ 	{"MM_DL VMixer", NULL, "MM_DL"},
+ 	{"MM_DL VMixer", NULL, "MM_DL_LP"},
+ 	{"PDM_DL2", NULL, "DL2 Mixer"},
+-#else
+-	{"DL1 PDM_DL2", "Switch", "Sidetone Mixer"},
+-	{"PDM_DL2", NULL, "DL1 PDM_DL2"},
+-#endif
+ 
+ 	/* VxREC Mixer */
+ 	{"Capture Mixer", "Tones", "VXREC"},
+@@ -2206,12 +2161,6 @@ static int aess_restore_context(struct abe_data *abe)
+ 	if (pdata->was_context_lost && pdata->was_context_lost(abe->dev))
+ 		abe_reload_fw(abe->firmware);
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	abe_write_select_pdm_output(1);
+-#else
+-	abe_write_select_pdm_output(3);
+-#endif
+-
+ 	/* unmute gains not associated with FEs/BEs */
+ 	abe_unmute_gain(MIXAUDUL, MIX_AUDUL_INPUT_MM_DL);
+ 	abe_unmute_gain(MIXAUDUL, MIX_AUDUL_INPUT_TONES);
+@@ -2566,12 +2515,6 @@ static int abe_resume(struct snd_soc_dai *dai)
+ 
+ 	abe_reload_fw(abe->firmware);
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	abe_write_select_pdm_output(1);
+-#else
+-	abe_write_select_pdm_output(3);
+-#endif
+-
+ 	switch (dai->id) {
+ 	case OMAP_ABE_DAI_PDM_UL:
+ 		abe_unmute_gain(GAINS_AMIC, GAIN_LEFT_OFFSET);
+@@ -2789,12 +2732,6 @@ static int abe_probe(struct snd_soc_platform *platform)
+ 
+ 	abe_dsp_init_gains(abe);
+ 
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	abe_write_select_pdm_output(1);
+-#else
+-	abe_write_select_pdm_output(3);
+-#endif
+-
+ 	/* Stop the engine */
+ 	abe_stop_event_generator();
+ 	abe_disable_irq();
+diff --git a/sound/soc/omap/omap-abe-dsp.h b/sound/soc/omap/omap-abe-dsp.h
+index 65e87f9..afcc052 100644
+--- a/sound/soc/omap/omap-abe-dsp.h
++++ b/sound/soc/omap/omap-abe-dsp.h
+@@ -43,16 +43,15 @@
+ #define MIX_VXREC_MEDIA		ABE_MIXER(14)
+ #define MIX_SDT_CAPTURE		ABE_MIXER(15)
+ #define MIX_SDT_PLAYBACK		ABE_MIXER(16)
+-#define MIX_SWITCH_PDM_DL1		ABE_MIXER(17)
++#define MIX_SWITCH_PDM_DL		ABE_MIXER(17)
+ #define MIX_SWITCH_BT_VX_DL		ABE_MIXER(18)
+ #define MIX_SWITCH_MM_EXT_DL		ABE_MIXER(19)
+ #define MIX_DL1_MONO		ABE_MIXER(20)
+ #define MIX_DL2_MONO		ABE_MIXER(21)
+ #define MIX_AUDUL_MONO		ABE_MIXER(22)
+-#define MIX_SWITCH_PDM_DL2		ABE_MIXER(23)
+ 
+ #define ABE_NUM_MONO_MIXERS	(MIX_AUDUL_MONO - MIX_DL1_MONO + 1)
+-#define ABE_NUM_MIXERS		(MIX_SWITCH_PDM_DL2 + 1)
++#define ABE_NUM_MIXERS		(MIX_AUDUL_MONO + 1)
+ 
+ #define ABE_MUX(x)		(x + ABE_NUM_MIXERS)
+ 
+@@ -120,13 +119,12 @@
+ #define W_MIXER_AUDIO_UL	ABE_WIDGET(35)
+ #define W_MIXER_VX_REC		ABE_WIDGET(36)
+ #define W_MIXER_SDT		ABE_WIDGET(37)
+-#define W_VSWITCH_DL1_PDM1	ABE_WIDGET(38)
++#define W_VSWITCH_DL1_PDM	ABE_WIDGET(38)
+ #define W_VSWITCH_DL1_BT_VX	ABE_WIDGET(39)
+ #define W_VSWITCH_DL1_MM_EXT	ABE_WIDGET(40)
+-#define W_VSWITCH_DL1_PDM2	ABE_WIDGET(42)
+ 
+-#define ABE_NUM_WIDGETS		(W_VSWITCH_DL1_PDM2 - W_AIF_TONES_DL)
+-#define ABE_WIDGET_LAST		W_VSWITCH_DL1_PDM2
++#define ABE_NUM_WIDGETS		(W_AIF_VXREC - W_AIF_TONES_DL)
++#define ABE_WIDGET_LAST		W_AIF_VXREC
+ 
+ #define ABE_NUM_DAPM_REG		\
+ 	(ABE_NUM_MIXERS + ABE_NUM_MUXES + ABE_NUM_WIDGETS)
+diff --git a/sound/soc/omap/omap-abe.c b/sound/soc/omap/omap-abe.c
+index 08994b3..cf91c3a 100644
+--- a/sound/soc/omap/omap-abe.c
++++ b/sound/soc/omap/omap-abe.c
+@@ -178,11 +178,6 @@ int omap_abe_set_dl1_output(int output)
+ 	case OMAP_ABE_DL1_EARPIECE:
+ 		gain = GAIN_M1dB;
+ 		break;
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	case OMAP_ABE_DL1_HANDSFREE:
+-		gain = GAIN_M7dB;
+-		break;
+-#endif
+ 	case OMAP_ABE_DL1_NO_PDM:
+ 		gain = GAIN_0dB;
+ 		break;
+@@ -199,22 +194,13 @@ EXPORT_SYMBOL(omap_abe_set_dl1_output);
+ 
+ static int omap_abe_dl1_enabled(struct omap_abe_data *abe_priv)
+ {
+-	int dl1;
+-
+ 	/* DL1 path is common for PDM_DL1, BT_VX_DL and MM_EXT_DL */
+-	dl1 = omap_abe_port_is_enabled(abe_priv->abe,
++	return omap_abe_port_is_enabled(abe_priv->abe,
+ 				abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL1]) +
+ 		omap_abe_port_is_enabled(abe_priv->abe,
+ 				abe_priv->port[OMAP_ABE_BE_PORT_BT_VX_DL]) +
+ 		omap_abe_port_is_enabled(abe_priv->abe,
+ 				abe_priv->port[OMAP_ABE_BE_PORT_MM_EXT_DL]);
+-
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	dl1 += omap_abe_port_is_enabled(abe_priv->abe,
+-				abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL2]);
+-#endif
+-
+-	return dl1;
+ }
+ 
+ static void mute_be(struct snd_soc_pcm_runtime *be,
+@@ -241,16 +227,8 @@ static void mute_be(struct snd_soc_pcm_runtime *be,
+ 			}
+ 			break;
+ 		case OMAP_ABE_DAI_PDM_DL2:
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 			abe_mute_gain(GAINS_DL2, GAIN_LEFT_OFFSET);
+ 			abe_mute_gain(GAINS_DL2, GAIN_RIGHT_OFFSET);
+-#else
+-			if (omap_abe_dl1_enabled(abe_priv) == 1) {
+-				abe_mute_gain(GAINS_DL1, GAIN_LEFT_OFFSET);
+-				abe_mute_gain(GAINS_DL1, GAIN_RIGHT_OFFSET);
+-				abe_mute_gain(MIXSDT, MIX_SDT_INPUT_DL1_MIXER);
+-			}
+-#endif
+ 			break;
+ 		case OMAP_ABE_DAI_PDM_VIB:
+ 		case OMAP_ABE_DAI_MODEM:
+@@ -305,14 +283,8 @@ static void unmute_be(struct snd_soc_pcm_runtime *be,
+ 			abe_unmute_gain(MIXSDT, MIX_SDT_INPUT_DL1_MIXER);
+ 			break;
+ 		case OMAP_ABE_DAI_PDM_DL2:
+-#if defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+ 			abe_unmute_gain(GAINS_DL2, GAIN_LEFT_OFFSET);
+ 			abe_unmute_gain(GAINS_DL2, GAIN_RIGHT_OFFSET);
+-#else
+-			abe_unmute_gain(GAINS_DL1, GAIN_LEFT_OFFSET);
+-			abe_unmute_gain(GAINS_DL1, GAIN_RIGHT_OFFSET);
+-			abe_unmute_gain(MIXSDT, MIX_SDT_INPUT_DL1_MIXER);
+-#endif
+ 			break;
+ 		case OMAP_ABE_DAI_PDM_VIB:
+ 			break;
+@@ -995,12 +967,20 @@ static int omap_abe_dai_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	dma_data = &omap_abe_dai_dma_params[dai->id][substream->stream];
+ 
++	/* Reset DMA info that may have been overridden */
++	dma_data->port_addr = 0L;
++	dma_data->set_threshold = NULL;
++	dma_data->data_type = OMAP_DMA_DATA_TYPE_S32;
++	dma_data->packet_size = 0;
++
+ 	switch (params_channels(params)) {
+ 	case 1:
+-		if (params_format(params) == SNDRV_PCM_FORMAT_S16_LE)
+-			format.samp_format = MONO_16_16;
+-		else
++		if (params_format(params) == SNDRV_PCM_FORMAT_S16_LE) {
++			format.samp_format = MONO_RSHIFTED_16;
++			dma_data->data_type = OMAP_DMA_DATA_TYPE_S16;
++		} else {
+ 			format.samp_format = MONO_MSB;
++		}
+ 		break;
+ 	case 2:
+ 		if (params_format(params) == SNDRV_PCM_FORMAT_S16_LE)
+@@ -1425,16 +1405,14 @@ static struct snd_soc_dai_driver omap_abe_dai[] = {
+ 			.stream_name = "Voice Playback",
+ 			.channels_min = 1,
+ 			.channels_max = 2,
+-			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
+-				 SNDRV_PCM_RATE_48000,
++			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000,
+ 			.formats = OMAP_ABE_FORMATS,
+ 		},
+ 		.capture = {
+ 			.stream_name = "Voice Capture",
+ 			.channels_min = 1,
+ 			.channels_max = 2,
+-			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
+-				 SNDRV_PCM_RATE_48000,
++			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000,
+ 			.formats = OMAP_ABE_FORMATS,
+ 		},
+ 		.ops = &omap_abe_dai_ops,
+diff --git a/sound/soc/omap/omap-abe.h b/sound/soc/omap/omap-abe.h
+index ced4b2a..483995d 100644
+--- a/sound/soc/omap/omap-abe.h
++++ b/sound/soc/omap/omap-abe.h
+@@ -64,9 +64,6 @@
+ #define OMAP_ABE_DL1_HEADSET_LP		1
+ #define OMAP_ABE_DL1_HEADSET_HP		2
+ #define OMAP_ABE_DL1_EARPIECE		3
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-#define OMAP_ABE_DL1_HANDSFREE		4
+-#endif
+ 
+ int omap_abe_set_dl1_output(int output);
+ 
+diff --git a/sound/soc/omap/sdp4430.c b/sound/soc/omap/sdp4430.c
+index de4ac69..4a7caa0 100755
+--- a/sound/soc/omap/sdp4430.c
++++ b/sound/soc/omap/sdp4430.c
+@@ -340,12 +340,9 @@ static int dmic_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+ {
+ 	struct snd_interval *rate = hw_param_interval(params,
+ 			SNDRV_PCM_HW_PARAM_RATE);
+-	struct snd_interval *channels = hw_param_interval(params,
+-			SNDRV_PCM_HW_PARAM_CHANNELS);
+ 
+ 	/* The ABE will covert the FE rate to 96k */
+ 	rate->min = rate->max = 96000;
+-	channels->min = channels->max = 2;
+ 
+ 	snd_mask_set(&params->masks[SNDRV_PCM_HW_PARAM_FORMAT -
+ 	                            SNDRV_PCM_HW_PARAM_FIRST_MASK],
+@@ -478,10 +475,6 @@ static int sdp4430_set_pdm_dl1_gains(struct snd_soc_dapm_context *dapm)
+ 		else
+ 			/* HSDACL in HP mode */
+ 			output = OMAP_ABE_DL1_HEADSET_HP;
+-#if !defined(CONFIG_SND_OMAP_SOC_ABE_DL2)
+-	} else if (snd_soc_dapm_get_pin_power(dapm, "Ext Spk")) {
+-		output = OMAP_ABE_DL1_HANDSFREE;
+-#endif
+ 	} else {
+ 		output = OMAP_ABE_DL1_NO_PDM;
+ 	}

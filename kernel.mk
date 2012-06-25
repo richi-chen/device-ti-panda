@@ -5,7 +5,7 @@ endif
 ifeq (full_richi_panda,$(TARGET_PRODUCT))
 
 export KERNEL_PATH:=$(shell pwd)/kernel
-export WLAN_PATH:=$(shell pwd)/hardware/ti/wlan/mac80211/compat
+export WLAN_PATH:=$(shell pwd)/hardware/ti/wlan/mac80211/compat_wl12xx
 
 export TMS470CGTOOLPATH:=/opt/ti/ccsv5/tools/compiler/tms470
 export C6000CGTOOLPATH:=/opt/TI/C6000CGT7.2.0
