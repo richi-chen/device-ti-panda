@@ -26,12 +26,15 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     CameraOMAP4 \
     Camera \
-    camera_test \
+    camera_test
+
+PRODUCT_PACKAGES += \
     libcpcam_jni \
     com.ti.omap.android.cpcam
 
 PRODUCT_COPY_FILES += \
 	hardware/ti/omap4xxx/cpcam/com.ti.omap.android.cpcam.xml:system/etc/permissions/com.ti.omap.android.cpcam.xml
+
 
 # VTC test
 PRODUCT_PACKAGES += \
@@ -103,7 +106,7 @@ PRODUCT_PACKAGES += \
 	audio.a2dp.default \
 	libaudioutils
 
-# Wifi
+# WI-Fi
 PRODUCT_PACKAGES += \
 	dhcpcd.conf \
 	hostapd.conf \
@@ -136,7 +139,7 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
 	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
 	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
-	frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+	device/ti/richi-panda/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
 	frameworks/base/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
 	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
 	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml

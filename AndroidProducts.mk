@@ -25,7 +25,9 @@
 # it includes.
 #
 
-PRODUCT_MAKEFILES := $(LOCAL_DIR)/full_panda.mk \
+PRODUCT_MAKEFILES := $(LOCAL_DIR)/full_panda.mk
+
+PRODUCT_MAKEFILES += \
     device/ti/blaze_tablet/sdk_addon/ti_omap_addon.mk
 
 
